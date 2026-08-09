@@ -1,0 +1,34 @@
+name: konterreflex
+description: Voice first communication training app.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: any
+  flutter_riverpod: any
+  go_router: any
+  supabase_flutter: any
+  freezed_annotation: any
+  json_annotation: any
+  record: any
+  just_audio: any
+  permission_handler: any
+  flutter_animate: any
+  shared_preferences: any
+  url_launcher: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+  build_runner: any
+  freezed: any
+  json_serializable: any
+
+flutter:
+  uses-material-design: true
