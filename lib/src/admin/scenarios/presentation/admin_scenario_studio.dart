@@ -724,10 +724,10 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
               .toList(),
           characters: characters,
           turns: turns,
-      status: AdminScenarioStatus.draft,
-      source: widget.scenario?.source ?? 'manual',
-      contentRevision: widget.scenario?.contentRevision ?? 1,
-    ));
+          status: AdminScenarioStatus.draft,
+          source: widget.scenario?.source ?? 'manual',
+          contentRevision: widget.scenario?.contentRevision ?? 1,
+        ));
   }
 }
 

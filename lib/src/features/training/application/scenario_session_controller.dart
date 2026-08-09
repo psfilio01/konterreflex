@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
 import 'package:konterreflex/src/features/golden_book/data/golden_book_capture_service.dart';
+import 'package:konterreflex/src/core/analytics/privacy_analytics.dart';
 import 'package:konterreflex/src/features/training/data/scenario_repository.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
@@ -32,11 +34,13 @@ class ScenarioSessionController extends ChangeNotifier {
     required FeedbackRepository feedbackRepository,
     required VoiceTurnController voice,
     GoldenBookCaptureService? goldenBookCapture,
+    PrivacyAnalytics? analytics,
     String Function()? createId,
   })  : _repository = repository,
         _feedbackRepository = feedbackRepository,
         _voice = voice,
         _goldenBookCapture = goldenBookCapture,
+        _analytics = analytics,
         _createId = createId ?? createClientUuid,
         _sessionClientId = (createId ?? createClientUuid)(),
         _responseClientId = (createId ?? createClientUuid)() {
@@ -48,6 +52,7 @@ class ScenarioSessionController extends ChangeNotifier {
   final FeedbackRepository _feedbackRepository;
   final VoiceTurnController _voice;
   final GoldenBookCaptureService? _goldenBookCapture;
+  final PrivacyAnalytics? _analytics;
   final String Function() _createId;
   String _sessionClientId;
   String _responseClientId;
@@ -59,6 +64,8 @@ class ScenarioSessionController extends ChangeNotifier {
   ScenarioSessionStatus _status = ScenarioSessionStatus.ready;
   String? _message;
   String? _savedPhrase;
+  bool _startTracked = false;
+  bool _completionTracked = false;
 
   ScenarioSessionStatus get status => _status;
   VoiceTurnSnapshot get voice => _voice.snapshot;
@@ -77,6 +84,11 @@ class ScenarioSessionController extends ChangeNotifier {
         scenarioId: scenario.id,
         clientId: _sessionClientId,
       );
+      if (!_startTracked) {
+        _startTracked = true;
+        _track(AnalyticsEventName.sessionStarted, AnalyticsStep.scene,
+            AnalyticsOutcome.started);
+      }
       _setStatus(ScenarioSessionStatus.playing);
       await _voice.playScene(scenario.speechLines);
       if (_voice.snapshot.state == VoiceTurnState.awaitingUser) {
@@ -135,6 +147,11 @@ class ScenarioSessionController extends ChangeNotifier {
         feedback: _feedback!,
       );
       await _repository.completeSession(session.id);
+      if (!_completionTracked) {
+        _completionTracked = true;
+        _track(AnalyticsEventName.sessionCompleted, AnalyticsStep.completion,
+            AnalyticsOutcome.completed);
+      }
       if (_voice.snapshot.state == VoiceTurnState.processing) {
         await _voice.presentFeedback(_feedback!.spokenSummary);
       }
@@ -254,12 +271,27 @@ class ScenarioSessionController extends ChangeNotifier {
     _feedback = null;
     _followUpAnswer = null;
     _savedPhrase = null;
+    _startTracked = false;
+    _completionTracked = false;
     _setStatus(ScenarioSessionStatus.ready);
   }
 
   Future<void> interrupt() => _voice.interrupt();
 
   Future<bool> openMicrophoneSettings() => _voice.openMicrophoneSettings();
+
+  void _track(
+      AnalyticsEventName name, AnalyticsStep step, AnalyticsOutcome outcome) {
+    final analytics = _analytics;
+    if (analytics == null) return;
+    unawaited(analytics
+        .track(PrivacyAnalyticsEvent(
+            name: name,
+            feature: AnalyticsFeature.training,
+            step: step,
+            outcome: outcome))
+        .catchError((_) {}));
+  }
 
   void _relayVoiceState() => notifyListeners();
 
