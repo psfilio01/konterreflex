@@ -82,6 +82,7 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
     outputSchema: strictObject({
       headline: text(1),
       explanation: text(1),
+      strengths: textList(3),
       improvement: text(1),
       alternatives: textList(3),
       dimensions: strictObject({

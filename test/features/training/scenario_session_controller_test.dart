@@ -5,7 +5,9 @@ import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/features/training/application/scenario_session_controller.dart';
+import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
 import 'package:konterreflex/src/features/training/data/scenario_repository.dart';
+import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 
 void main() {
@@ -13,11 +15,14 @@ void main() {
     final repository = _MemoryScenarioRepository()..failCompletionOnce = true;
     final ids = [
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
     ];
     final controller = ScenarioSessionController(
       scenario: testScenario,
       repository: repository,
+      feedbackRepository: _FeedbackRepository(),
       voice: VoiceTurnController(
         permission: _Permission(),
         recorder: _Recorder(),
@@ -38,10 +43,21 @@ void main() {
 
     await controller.retryPersistence();
 
-    expect(controller.status, ScenarioSessionStatus.completed);
+    expect(controller.status, ScenarioSessionStatus.feedbackReady);
     expect(repository.sessions.length, 1);
     expect(repository.responses.length, 1);
     expect(repository.completedSessionIds, {'session-1'});
+
+    await controller.startFollowUp();
+    expect(controller.status, ScenarioSessionStatus.followUpRecording);
+    await controller.submitFollowUp();
+    expect(controller.status, ScenarioSessionStatus.feedbackReady);
+    expect(controller.followUpAnswer, 'Eine kurze Antwort.');
+
+    controller.retryScene();
+    expect(controller.status, ScenarioSessionStatus.ready);
+    expect(controller.transcript, isNull);
+    expect(controller.feedback, isNull);
   });
 
   test('group scenarios retain distinct actors in playback order', () {
@@ -97,12 +113,13 @@ class _MemoryScenarioRepository implements ScenarioRepository {
   }
 
   @override
-  Future<void> saveResponse({
+  Future<String> saveResponse({
     required String sessionId,
     required String clientId,
     required String transcript,
   }) async {
     responses[clientId] = transcript;
+    return 'response-1';
   }
 
   @override
@@ -114,6 +131,48 @@ class _MemoryScenarioRepository implements ScenarioRepository {
     completedSessionIds.add(sessionId);
   }
 }
+
+class _FeedbackRepository implements FeedbackRepository {
+  @override
+  Future<QualitativeFeedback> evaluate({
+    required TrainingScenario scenario,
+    required String transcript,
+  }) async =>
+      testFeedback;
+
+  @override
+  Future<void> save({
+    required String responseId,
+    required QualitativeFeedback feedback,
+  }) async {}
+
+  @override
+  Future<String> answerFollowUp({
+    required TrainingScenario scenario,
+    required QualitativeFeedback feedback,
+    required String question,
+  }) async =>
+      'Eine kurze Antwort.';
+}
+
+const testFeedback = QualitativeFeedback(
+  headline: 'Klar positioniert',
+  explanation: 'Die Antwort macht deinen Standpunkt verständlich.',
+  strengths: ['Ruhiger Einstieg'],
+  improvement: 'Formuliere den nächsten Schritt noch konkreter.',
+  alternatives: ['Ich sehe das anders und erkläre kurz, warum.'],
+  dimensions: FeedbackDimensions(
+    posture: 'ruhig',
+    precision: 'klar',
+    frame: 'neu gesetzt',
+    socialEffect: 'anschlussfähig',
+    naturalness: 'sprechbar',
+    escalationFit: 'passend',
+  ),
+  provider: 'mock',
+  model: 'mock',
+  promptVersion: 'response_evaluate_v1',
+);
 
 class _Permission implements MicrophonePermissionGateway {
   @override

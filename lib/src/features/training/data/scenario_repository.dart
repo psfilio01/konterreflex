@@ -9,7 +9,7 @@ abstract interface class ScenarioRepository {
     required String clientId,
   });
 
-  Future<void> saveResponse({
+  Future<String> saveResponse({
     required String sessionId,
     required String clientId,
     required String transcript,
@@ -71,17 +71,22 @@ class SupabaseScenarioRepository implements ScenarioRepository {
   }
 
   @override
-  Future<void> saveResponse({
+  Future<String> saveResponse({
     required String sessionId,
     required String clientId,
     required String transcript,
   }) async {
-    await _client.from('user_responses').upsert({
-      'session_id': sessionId,
-      'user_id': _userId,
-      'client_id': clientId,
-      'transcript': transcript,
-    }, onConflict: 'user_id,client_id');
+    final data = await _client
+        .from('user_responses')
+        .upsert({
+          'session_id': sessionId,
+          'user_id': _userId,
+          'client_id': clientId,
+          'transcript': transcript,
+        }, onConflict: 'user_id,client_id')
+        .select('id')
+        .single();
+    return data['id'] as String;
   }
 
   @override
