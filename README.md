@@ -44,6 +44,22 @@ flutter test
 
 Stop local services with `supabase stop`.
 
+### Serverseitige Provider-Konfiguration
+
+KI-, Sprach- und Stripe-Schlüssel gehören ausschließlich in Supabase-Secrets
+oder eine lokale, nicht versionierte `supabase/.env.local`. Die erwarteten
+Variablen stehen in `supabase/.env.example`. Checkout ist nur für den in
+`app_config.billing_channels` erlaubten Kanal verfügbar; mobile Store-Builds
+verwenden standardmäßig den getrennten Store-Adapter.
+
+Stripe-Webhook lokal weiterleiten und die Functions mit lokalen Variablen
+starten:
+
+```bash
+supabase functions serve --env-file supabase/.env.local
+stripe listen --forward-to http://127.0.0.1:55421/functions/v1/stripe-webhook
+```
+
 ## Codex workflow
 
 Work through `prompts/00_BOOTSTRAP.md` to `prompts/14_RELEASE_READINESS.md` in

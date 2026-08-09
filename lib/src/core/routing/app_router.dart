@@ -8,6 +8,7 @@ import 'package:konterreflex/src/features/golden_book/presentation/golden_book_s
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
+import 'package:konterreflex/src/features/subscription/subscription_screen.dart';
 import 'package:konterreflex/src/features/speech_challenge/presentation/speech_challenge_screen.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/scenario_session_screen.dart';
@@ -24,6 +25,7 @@ abstract final class AppRoute {
   static const realLife = 'real-life';
   static const speechChallenge = 'speech-challenge';
   static const goldenBook = 'golden-book';
+  static const subscription = 'subscription';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -80,6 +82,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         name: AppRoute.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/subscription',
+        name: AppRoute.subscription,
+        builder: (context, state) => const SubscriptionScreen(),
       ),
       GoRoute(
         path: '/training',
