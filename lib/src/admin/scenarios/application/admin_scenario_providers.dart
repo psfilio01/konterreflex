@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/admin/scenarios/data/admin_scenario_generation_service.dart';
 import 'package:konterreflex/src/admin/scenarios/data/admin_scenario_repository.dart';
+import 'package:konterreflex/src/admin/scenarios/data/admin_scenario_safety_service.dart';
 import 'package:konterreflex/src/admin/scenarios/domain/admin_scenario.dart';
 import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
@@ -26,6 +27,14 @@ final adminScenarioGenerationProvider =
   return AdminScenarioGenerationService(
       ai: SupabaseAiGateway(client),
       repository: ref.watch(adminScenarioRepositoryProvider));
+});
+
+final adminScenarioSafetyProvider = Provider<AdminScenarioSafetyService>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return AdminScenarioSafetyService(
+    ai: SupabaseAiGateway(client),
+    repository: ref.watch(adminScenarioRepositoryProvider),
+  );
 });
 
 final actorVoiceOptionsProvider =

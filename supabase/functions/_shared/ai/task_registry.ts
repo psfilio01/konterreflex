@@ -65,8 +65,8 @@ const reconstructionSchema = strictObject({
 export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   "scenario.generate": {
     task: "scenario.generate",
-    promptFile: "scenario_generate_v1.md",
-    promptVersion: "scenario_generate_v1",
+    promptFile: "scenario_generate_v2.md",
+    promptVersion: "scenario_generate_v2",
     outputSchema: scenarioSchema,
   },
   "scenario.personalize": {
@@ -75,10 +75,23 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
     promptVersion: "scenario_personalize_v1",
     outputSchema: scenarioSchema,
   },
+  "scenario.safety_review": {
+    task: "scenario.safety_review",
+    promptFile: "scenario_safety_review_v1.md",
+    promptVersion: "scenario_safety_review_v1",
+    outputSchema: strictObject({
+      decision: { type: "string", enum: ["pass", "needs_review", "block"] },
+      findings: textList(6),
+      rationale: text(1),
+      hostile_content_as_training: { type: "boolean" },
+      protected_trait_linkage: { type: "boolean" },
+      stereotype_risk: { type: "boolean" },
+    }),
+  },
   "response.evaluate": {
     task: "response.evaluate",
-    promptFile: "response_evaluate_v1.md",
-    promptVersion: "response_evaluate_v1",
+    promptFile: "response_evaluate_v2.md",
+    promptVersion: "response_evaluate_v2",
     outputSchema: strictObject({
       headline: text(1),
       explanation: text(1),

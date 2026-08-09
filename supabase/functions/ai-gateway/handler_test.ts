@@ -163,3 +163,19 @@ Deno.test("rejects numeric scoring fields in response evaluation", async () => {
     "expected validation error",
   );
 });
+
+Deno.test("safety review keeps hostile training context separate from discrimination", async () => {
+  const provider = new MockAiProvider({
+    decision: "pass",
+    findings: ["Hostile remark is the explicit training object."],
+    rationale: "The scenario does not endorse the remark.",
+    hostile_content_as_training: true,
+    protected_trait_linkage: false,
+    stereotype_risk: false,
+  });
+  const response = await handlerFor(provider)(request("scenario.safety_review"));
+  const body = await response.json();
+  assert(response.status === 200, "expected valid safety review");
+  assert(body.data.hostile_content_as_training === true, "expected explicit training context");
+  assert(body.data.protected_trait_linkage === false, "expected no trait linkage");
+});

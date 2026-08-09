@@ -16,6 +16,8 @@ Core tables:
 - `entitlements`
 - `app_config`
 - `prompt_versions`
+- `communication_knowledge`
+- `scenario_safety_reviews`
 
 Generated scenarios default to `draft`. Only admins may set them to `active`.
 

@@ -33,6 +33,8 @@ class AdminScenario {
     required this.turns,
     this.status = AdminScenarioStatus.draft,
     this.source = 'manual',
+    this.contentRevision = 1,
+    this.safetyDecision,
   });
 
   factory AdminScenario.fromGateway(Map<String, dynamic> data) {
@@ -77,6 +79,13 @@ class AdminScenario {
   }
 
   factory AdminScenario.fromJson(Map<String, dynamic> json) {
+    final revision = json['content_revision'] as int? ?? 1;
+    final reviews = (json['scenario_safety_reviews'] as List? ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .where((item) => item['content_revision'] == revision)
+        .toList()
+      ..sort((a, b) =>
+          (b['created_at'] as String).compareTo(a['created_at'] as String));
     final rawCharacters = (json['scenario_characters'] as List? ?? const [])
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList()
@@ -102,6 +111,9 @@ class AdminScenario {
           (json['evaluation_focus'] as List? ?? const []).cast<String>(),
       status: AdminScenarioStatus.values.byName(json['status'] as String),
       source: json['source'] as String,
+      contentRevision: revision,
+      safetyDecision:
+          reviews.isEmpty ? null : reviews.first['decision'] as String,
       characters: rawCharacters
           .map((item) => AdminCharacter(
               name: item['name'] as String,
@@ -128,6 +140,8 @@ class AdminScenario {
   final List<AdminTurn> turns;
   final AdminScenarioStatus status;
   final String source;
+  final int contentRevision;
+  final String? safetyDecision;
 
   TrainingScenario toTrainingScenario() {
     final actorByName = <String, ScenarioCharacter>{};
@@ -156,6 +170,68 @@ class AdminScenario {
       ],
     );
   }
+}
+
+class ScenarioSafetyReview {
+  const ScenarioSafetyReview({
+    required this.decision,
+    required this.findings,
+    required this.rationale,
+    required this.hostileContentAsTraining,
+    required this.protectedTraitLinkage,
+    required this.stereotypeRisk,
+    required this.provider,
+    required this.model,
+    required this.promptVersion,
+  });
+
+  factory ScenarioSafetyReview.fromGateway({
+    required Map<String, dynamic> data,
+    required String provider,
+    required String model,
+    required String promptVersion,
+  }) {
+    const expected = {
+      'decision',
+      'findings',
+      'rationale',
+      'hostile_content_as_training',
+      'protected_trait_linkage',
+      'stereotype_risk'
+    };
+    if (data.keys.toSet().length != expected.length ||
+        !data.keys.toSet().containsAll(expected)) {
+      throw const FormatException('Unsupported safety review fields.');
+    }
+    final decision = data['decision'];
+    final findings = data['findings'];
+    if (!const {'pass', 'needs_review', 'block'}.contains(decision) ||
+        findings is! List ||
+        findings.any((item) => item is! String)) {
+      throw const FormatException('Invalid safety decision.');
+    }
+    return ScenarioSafetyReview(
+      decision: decision as String,
+      findings: findings.cast<String>(),
+      rationale: _text(data, 'rationale'),
+      hostileContentAsTraining: data['hostile_content_as_training'] as bool,
+      protectedTraitLinkage: data['protected_trait_linkage'] as bool,
+      stereotypeRisk: data['stereotype_risk'] as bool,
+      provider: provider,
+      model: model,
+      promptVersion: promptVersion,
+    );
+  }
+
+  final String decision;
+  final List<String> findings;
+  final String rationale;
+  final bool hostileContentAsTraining;
+  final bool protectedTraitLinkage;
+  final bool stereotypeRisk;
+  final String provider;
+  final String model;
+  final String promptVersion;
 }
 
 String _text(Map<String, dynamic> data, String key) {
