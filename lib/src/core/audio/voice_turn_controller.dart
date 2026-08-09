@@ -133,6 +133,40 @@ class VoiceTurnController extends ChangeNotifier {
     }
   }
 
+  Future<TranscriptionResult?> captureHandsFree() async {
+    if (_machine.state != VoiceTurnState.awaitingUser) {
+      throw StateError('The turn is not waiting for the user.');
+    }
+    final recorder = _recorder;
+    if (recorder is! HandsFreeVoiceRecorder) {
+      throw StateError('The recorder does not support hands-free capture.');
+    }
+    final status = await _permission.request();
+    if (status != MicrophonePermissionStatus.granted) {
+      _publish(
+        permissionStatus: status,
+        message: 'Ohne Mikrofonzugriff ist kein freihändiger Ablauf möglich.',
+      );
+      return null;
+    }
+    final operation = ++_operation;
+    try {
+      _moveTo(VoiceTurnState.recording);
+      final audio = await recorder.recordUntilSilence();
+      _moveTo(VoiceTurnState.processing);
+      final transcription = await _speech.transcribe(audio);
+      if (operation != _operation) return null;
+      _publish(transcript: transcription.transcript);
+      return transcription;
+    } catch (_) {
+      if (operation == _operation) {
+        _machine.interrupt();
+        _publish(message: 'Deine Antwort konnte nicht verstanden werden.');
+      }
+      return null;
+    }
+  }
+
   Future<void> presentFeedback(String feedback) async {
     if (_machine.state != VoiceTurnState.processing) {
       throw StateError('No processed response is awaiting feedback.');

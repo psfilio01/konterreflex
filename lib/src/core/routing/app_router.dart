@@ -7,6 +7,7 @@ import 'package:konterreflex/src/features/home/home_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
+import 'package:konterreflex/src/features/speech_challenge/presentation/speech_challenge_screen.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/scenario_session_screen.dart';
 import 'package:konterreflex/src/features/training/presentation/training_screen.dart';
@@ -104,11 +105,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/speech-challenge',
         name: AppRoute.speechChallenge,
-        builder: (context, state) => const FeaturePlaceholderScreen(
-          title: 'Speech Challenge',
-          description:
-              'Reagiere spontan auf einen kurzen kommunikativen Impuls.',
-        ),
+        builder: (context, state) => const SpeechChallengeScreen(),
       ),
       GoRoute(
         path: '/golden-book',

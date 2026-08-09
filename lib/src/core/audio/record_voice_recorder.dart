@@ -1,25 +1,39 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:record/record.dart' as record;
 
-class RecordVoiceRecorder implements VoiceRecorder {
-  RecordVoiceRecorder({record.AudioRecorder? recorder})
-      : _recorder = recorder ?? record.AudioRecorder();
+class RecordVoiceRecorder implements HandsFreeVoiceRecorder {
+  RecordVoiceRecorder({
+    record.AudioRecorder? recorder,
+    this.silenceDuration = const Duration(milliseconds: 850),
+    this.maximumDuration = const Duration(seconds: 20),
+    this.speechThreshold = 650,
+  }) : _recorder = recorder ?? record.AudioRecorder();
 
   final record.AudioRecorder _recorder;
   StreamSubscription<Uint8List>? _subscription;
   Completer<void>? _streamFinished;
   BytesBuilder? _bytes;
+  void Function(Uint8List)? _onAudio;
+  final Duration silenceDuration;
+  final Duration maximumDuration;
+  final double speechThreshold;
 
   @override
   Future<void> start() async {
     if (_subscription != null) {
       throw StateError('A recording is already active.');
     }
+    await _beginRecording();
+  }
+
+  Future<void> _beginRecording({void Function(Uint8List)? onAudio}) async {
     _bytes = BytesBuilder(copy: false);
+    _onAudio = onAudio;
     _streamFinished = Completer<void>();
     final stream = await _recorder.startStream(
       const record.RecordConfig(
@@ -32,11 +46,46 @@ class RecordVoiceRecorder implements VoiceRecorder {
       ),
     );
     _subscription = stream.listen(
-      _bytes!.add,
+      (chunk) {
+        _bytes!.add(chunk);
+        _onAudio?.call(chunk);
+      },
       onError: _streamFinished!.completeError,
       onDone: _streamFinished!.complete,
       cancelOnError: true,
     );
+  }
+
+  @override
+  Future<RecordedAudio> recordUntilSilence() async {
+    if (_subscription != null) {
+      throw StateError('A recording is already active.');
+    }
+    final utteranceFinished = Completer<void>();
+    var heardSpeech = false;
+    var silentBytes = 0;
+    final requiredSilentBytes =
+        (32000 * silenceDuration.inMilliseconds / 1000).round();
+    await _beginRecording(
+      onAudio: (chunk) {
+        if (_pcmRms(chunk) >= speechThreshold) {
+          heardSpeech = true;
+          silentBytes = 0;
+        } else if (heardSpeech) {
+          silentBytes += chunk.length;
+          if (silentBytes >= requiredSilentBytes &&
+              !utteranceFinished.isCompleted) {
+            utteranceFinished.complete();
+          }
+        }
+      },
+    );
+    final timeout = Timer(maximumDuration, () {
+      if (!utteranceFinished.isCompleted) utteranceFinished.complete();
+    });
+    await utteranceFinished.future;
+    timeout.cancel();
+    return stop();
   }
 
   @override
@@ -66,6 +115,7 @@ class RecordVoiceRecorder implements VoiceRecorder {
     _subscription = null;
     _streamFinished = null;
     _bytes = null;
+    _onAudio = null;
   }
 
   @override
@@ -73,4 +123,17 @@ class RecordVoiceRecorder implements VoiceRecorder {
     await cancel();
     await _recorder.dispose();
   }
+}
+
+double _pcmRms(Uint8List bytes) {
+  if (bytes.length < 2) return 0;
+  var sum = 0.0;
+  var samples = 0;
+  for (var index = 0; index + 1 < bytes.length; index += 2) {
+    var sample = bytes[index] | (bytes[index + 1] << 8);
+    if (sample >= 0x8000) sample -= 0x10000;
+    sum += sample * sample;
+    samples += 1;
+  }
+  return samples == 0 ? 0 : sqrt(sum / samples);
 }
