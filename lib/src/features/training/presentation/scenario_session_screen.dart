@@ -10,6 +10,7 @@ import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_session_controller.dart';
+import 'package:konterreflex/src/features/golden_book/application/golden_book_providers.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_card.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
@@ -37,6 +38,7 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
       scenario: widget.scenario,
       repository: ref.read(scenarioRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
+      goldenBookCapture: ref.read(goldenBookCaptureProvider),
       voice: VoiceTurnController(
         permission: PermissionHandlerMicrophone(),
         recorder: RecordVoiceRecorder(),
@@ -108,7 +110,14 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                       ],
                       if (_controller.feedback case final feedback?) ...[
                         const SizedBox(height: AppSpacing.lg),
-                        QualitativeFeedbackCard(feedback: feedback),
+                        QualitativeFeedbackCard(
+                          feedback: feedback,
+                          onSavePhrase: _controller.savePhrase,
+                        ),
+                      ],
+                      if (_controller.savedPhrase case final phrase?) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Text('Im Golden Book gespeichert: „$phrase“'),
                       ],
                       if (_controller.followUpAnswer case final answer?) ...[
                         const SizedBox(height: AppSpacing.md),
@@ -141,6 +150,10 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
         ScenarioSessionStatus.followUpRecording => 'Deine Rückfrage',
         ScenarioSessionStatus.followUpProcessing =>
           'Rückfrage wird beantwortet …',
+        ScenarioSessionStatus.goldenBookRecording =>
+          'Welche Formulierung möchtest du speichern?',
+        ScenarioSessionStatus.goldenBookProcessing =>
+          'Formulierung wird aufgelöst …',
         ScenarioSessionStatus.error => 'Noch nicht abgeschlossen',
       };
 }
@@ -173,6 +186,11 @@ class _PrimaryAction extends StatelessWidget {
           icon: const Icon(Icons.stop_rounded),
           label: const Text('Rückfrage senden'),
         ),
+      ScenarioSessionStatus.goldenBookRecording => FilledButton.icon(
+          onPressed: controller.submitGoldenBookCommand,
+          icon: const Icon(Icons.stop_rounded),
+          label: const Text('Sprachbefehl senden'),
+        ),
       ScenarioSessionStatus.feedbackReady => Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
@@ -182,6 +200,11 @@ class _PrimaryAction extends StatelessWidget {
               onPressed: controller.startFollowUp,
               icon: const Icon(Icons.mic_none_rounded),
               label: const Text('Rückfrage stellen'),
+            ),
+            OutlinedButton.icon(
+              onPressed: controller.startGoldenBookCommand,
+              icon: const Icon(Icons.bookmark_add_outlined),
+              label: const Text('Satz per Stimme speichern'),
             ),
             OutlinedButton.icon(
               onPressed: controller.retryScene,

@@ -5,6 +5,7 @@ import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
+import 'package:konterreflex/src/features/golden_book/data/golden_book_capture_service.dart';
 import 'package:konterreflex/src/features/training/data/scenario_repository.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
@@ -19,6 +20,8 @@ enum ScenarioSessionStatus {
   feedbackReady,
   followUpRecording,
   followUpProcessing,
+  goldenBookRecording,
+  goldenBookProcessing,
   error,
 }
 
@@ -28,10 +31,12 @@ class ScenarioSessionController extends ChangeNotifier {
     required ScenarioRepository repository,
     required FeedbackRepository feedbackRepository,
     required VoiceTurnController voice,
+    GoldenBookCaptureService? goldenBookCapture,
     String Function()? createId,
   })  : _repository = repository,
         _feedbackRepository = feedbackRepository,
         _voice = voice,
+        _goldenBookCapture = goldenBookCapture,
         _createId = createId ?? createClientUuid,
         _sessionClientId = (createId ?? createClientUuid)(),
         _responseClientId = (createId ?? createClientUuid)() {
@@ -42,6 +47,7 @@ class ScenarioSessionController extends ChangeNotifier {
   final ScenarioRepository _repository;
   final FeedbackRepository _feedbackRepository;
   final VoiceTurnController _voice;
+  final GoldenBookCaptureService? _goldenBookCapture;
   final String Function() _createId;
   String _sessionClientId;
   String _responseClientId;
@@ -52,6 +58,7 @@ class ScenarioSessionController extends ChangeNotifier {
   String? _followUpAnswer;
   ScenarioSessionStatus _status = ScenarioSessionStatus.ready;
   String? _message;
+  String? _savedPhrase;
 
   ScenarioSessionStatus get status => _status;
   VoiceTurnSnapshot get voice => _voice.snapshot;
@@ -59,6 +66,8 @@ class ScenarioSessionController extends ChangeNotifier {
   QualitativeFeedback? get feedback => _feedback;
   String? get followUpAnswer => _followUpAnswer;
   String? get message => _message ?? _voice.snapshot.message;
+  String? get savedPhrase => _savedPhrase;
+  String? get sessionId => _session?.id;
 
   Future<void> start() async {
     _setStatus(ScenarioSessionStatus.starting);
@@ -176,6 +185,65 @@ class ScenarioSessionController extends ChangeNotifier {
     }
   }
 
+  Future<void> startGoldenBookCommand() async {
+    if (_feedback == null || _goldenBookCapture == null) return;
+    try {
+      _voice.prepareFollowUpRecording();
+      final permission = await _voice.startRecording();
+      if (permission == MicrophonePermissionStatus.granted &&
+          _voice.snapshot.state == VoiceTurnState.recording) {
+        _setStatus(ScenarioSessionStatus.goldenBookRecording);
+      }
+    } catch (_) {
+      _setError('Der Sprachbefehl konnte nicht gestartet werden.');
+    }
+  }
+
+  Future<void> submitGoldenBookCommand() async {
+    final capture = _goldenBookCapture;
+    final feedback = _feedback;
+    if (capture == null || feedback == null) return;
+    _setStatus(ScenarioSessionStatus.goldenBookProcessing);
+    final command = await _voice.stopAndTranscribe();
+    if (command == null) {
+      _setError('Der Sprachbefehl konnte nicht verstanden werden.');
+      return;
+    }
+    try {
+      final result = await capture.resolveCommand(
+        command: command.transcript,
+        sourceSessionId: _session?.id,
+        conversationContext: {
+          'scenario': scenario.title,
+          'actor_statements': scenario.turns.map((turn) => turn.body).toList(),
+          'user_response': _transcript,
+          'feedback_alternatives': feedback.alternatives,
+        },
+      );
+      final spoken = result.saved
+          ? 'Gespeichert: ${result.entry!.phrase}'
+          : result.clarificationQuestion!;
+      if (result.saved) _savedPhrase = result.entry!.phrase;
+      await _voice.presentFeedback(spoken);
+      _setStatus(ScenarioSessionStatus.feedbackReady);
+    } catch (_) {
+      _setError('Die Formulierung konnte nicht gespeichert werden.');
+    }
+  }
+
+  Future<void> savePhrase(String phrase) async {
+    final capture = _goldenBookCapture;
+    if (capture == null) return;
+    try {
+      final entry =
+          await capture.saveDirect(phrase, sourceSessionId: _session?.id);
+      _savedPhrase = entry.phrase;
+      notifyListeners();
+    } catch (_) {
+      _setError('Die Formulierung konnte nicht gespeichert werden.');
+    }
+  }
+
   void retryScene() {
     _voice.reset();
     _sessionClientId = _createId();
@@ -185,6 +253,7 @@ class ScenarioSessionController extends ChangeNotifier {
     _transcript = null;
     _feedback = null;
     _followUpAnswer = null;
+    _savedPhrase = null;
     _setStatus(ScenarioSessionStatus.ready);
   }
 
