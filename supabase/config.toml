@@ -37,3 +37,7 @@ jwt_expiry = 3600
 enabled = true
 verify_jwt = true
 static_files = ["./prompts/*.md"]
+
+[functions.speech-gateway]
+enabled = true
+verify_jwt = true
