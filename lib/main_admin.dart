@@ -8,8 +8,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final config = AppConfig.fromEnvironment();
   await Supabase.initialize(
-    url: config.supabaseUrl,
-    publishableKey: config.supabaseAnonKey,
-  );
+      url: config.supabaseUrl, publishableKey: config.supabaseAnonKey);
   runApp(const ProviderScope(child: KonterreflexAdminApp()));
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 message="${1:-feat: implement scoped prompt}"
+description="${2:-Dieses Feature setzt den beschriebenen Funktionsumfang um und wurde mit den relevanten automatisierten Tests geprüft.}"
 branch="$(git branch --show-current)"
 
 if [ "$branch" = "main" ]; then
@@ -20,7 +21,7 @@ fi
 
 if git remote get-url origin >/dev/null 2>&1 && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
   git push -u origin "$branch"
-  pr_url=$(gh pr create --fill --base main --head "$branch")
+  pr_url=$(gh pr create --title "$message" --body "$description" --base main --head "$branch")
   echo "PR: $pr_url"
   gh pr merge "$branch" --merge --delete-branch
   git checkout main
