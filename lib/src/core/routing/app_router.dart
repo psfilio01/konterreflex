@@ -5,6 +5,7 @@ import 'package:konterreflex/src/features/auth/presentation/auth_loading_screen.
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
 import 'package:konterreflex/src/features/home/home_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
+import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/scenario_session_screen.dart';
@@ -98,11 +99,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/real-life',
         name: AppRoute.realLife,
-        builder: (context, state) => const FeaturePlaceholderScreen(
-          title: 'Echte Situation',
-          description:
-              'Erzähle, was passiert ist, und probiere deine Antwort noch einmal.',
-        ),
+        builder: (context, state) => const RealLifeReplayScreen(),
       ),
       GoRoute(
         path: '/speech-challenge',
