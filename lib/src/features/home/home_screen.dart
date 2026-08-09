@@ -16,7 +16,9 @@ class HomeScreen extends StatelessWidget {
               children: [
                 IntelligenceOrb(),
                 SizedBox(height: 32),
-                Text('Konterreflex', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600)),
+                Text('Konterreflex',
+                    style:
+                        TextStyle(fontSize: 30, fontWeight: FontWeight.w600)),
                 SizedBox(height: 8),
                 Text('Hören. Reagieren. Reflektieren. Wiederholen.'),
               ],

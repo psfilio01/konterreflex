@@ -2,13 +2,52 @@
 
 Voice first training for spontaneous, confident communication.
 
-## Start here
+## Local setup
 
-1. Create a new GitHub repository and push this folder.
-2. Install Flutter, Supabase CLI, GitHub CLI and Codex.
-3. Copy `.env.example` to `.env` and configure local secrets. Never commit `.env`.
-4. Run `./scripts/bootstrap.sh` once.
-5. Work through `prompts/00_BOOTSTRAP.md` to `prompts/14_RELEASE_READINESS.md` in order.
+Install Flutter and the Supabase CLI, then run:
+
+```bash
+./scripts/bootstrap.sh
+supabase start
+cp .env.local.example .env.local
+supabase status
+```
+
+Copy the local API URL and anon key printed by `supabase status` into
+`.env.local`. The file contains public Flutter client configuration only and is
+ignored by Git. Provider and billing secrets belong in local server environment
+files or Supabase secrets; never pass them to Flutter.
+
+Start the mobile app or web app with:
+
+```bash
+flutter run --dart-define-from-file=.env.local
+flutter run -d chrome --dart-define-from-file=.env.local
+```
+
+For an Android emulator, use `http://10.0.2.2:54321` as `SUPABASE_URL`. The
+iOS simulator and web use `http://127.0.0.1:54321`.
+
+Run the web admin entry point with:
+
+```bash
+flutter run -d chrome -t lib/main_admin.dart \
+  --dart-define-from-file=.env.local
+```
+
+Validate the project with:
+
+```bash
+flutter analyze
+flutter test
+```
+
+Stop local services with `supabase stop`.
+
+## Codex workflow
+
+Work through `prompts/00_BOOTSTRAP.md` to `prompts/14_RELEASE_READINESS.md` in
+order.
 
 For Codex, simply open the repository and give it one prompt file at a time, for example:
 

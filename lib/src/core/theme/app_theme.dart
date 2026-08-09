@@ -14,7 +14,8 @@ abstract final class AppTheme {
         surface: background,
       ),
       textTheme: const TextTheme(
-        headlineMedium: TextStyle(fontWeight: FontWeight.w600, color: foreground),
+        headlineMedium:
+            TextStyle(fontWeight: FontWeight.w600, color: foreground),
         bodyLarge: TextStyle(height: 1.45, color: foreground),
       ),
     );
