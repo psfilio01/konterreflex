@@ -1,16 +1,19 @@
-export type AiTask =
-  | 'scenario.generate'
-  | 'scenario.personalize'
-  | 'response.evaluate'
-  | 'real_life.extract'
-  | 'real_life.reconstruct'
-  | 'conversation.reply'
-  | 'golden_book.extract';
+export const aiTasks = [
+  "scenario.generate",
+  "scenario.personalize",
+  "response.evaluate",
+  "real_life.extract",
+  "real_life.reconstruct",
+  "conversation.reply",
+  "golden_book.extract",
+] as const;
+
+export type AiTask = (typeof aiTasks)[number];
 
 export interface AiRequest {
   task: AiTask;
   payload: Record<string, unknown>;
-  schemaVersion: '1';
+  schemaVersion: "1";
 }
 
 export interface AiResponse<T = unknown> {
@@ -18,4 +21,10 @@ export interface AiResponse<T = unknown> {
   provider: string;
   model: string;
   promptVersion: string;
+  schemaVersion: "1";
+  requestId: string;
+}
+
+export function isAiTask(value: unknown): value is AiTask {
+  return typeof value === "string" && aiTasks.some((task) => task === value);
 }
