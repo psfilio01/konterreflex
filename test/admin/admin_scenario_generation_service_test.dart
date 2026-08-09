@@ -85,4 +85,10 @@ class _Repository implements AdminScenarioRepository {
     auditIds = scenarioIds;
     auditBatch = batchId;
   }
+
+  @override
+  Future<void> saveSafetyReview(
+      {required String scenarioId,
+      required int contentRevision,
+      required ScenarioSafetyReview review}) async {}
 }

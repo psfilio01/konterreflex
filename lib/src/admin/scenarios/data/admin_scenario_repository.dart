@@ -11,6 +11,11 @@ abstract interface class AdminScenarioRepository {
       required List<String> scenarioIds,
       String? batchId,
       Map<String, dynamic> detail = const {}});
+  Future<void> saveSafetyReview({
+    required String scenarioId,
+    required int contentRevision,
+    required ScenarioSafetyReview review,
+  });
 }
 
 class SupabaseAdminScenarioRepository implements AdminScenarioRepository {
@@ -21,7 +26,7 @@ class SupabaseAdminScenarioRepository implements AdminScenarioRepository {
       (throw const AuthException('Authentication required.'));
 
   static const selection =
-      'id,title,category,moderator_intro,trigger_statement,underlying_intent,evaluation_focus,status,source,scenario_characters(id,name,description,voice_id,sort_order),scenario_turns(character_id,body,stage_direction,sort_order)';
+      'id,title,category,moderator_intro,trigger_statement,underlying_intent,evaluation_focus,status,source,content_revision,scenario_characters(id,name,description,voice_id,sort_order),scenario_turns(character_id,body,stage_direction,sort_order),scenario_safety_reviews(decision,content_revision,created_at)';
 
   @override
   Future<List<AdminScenario>> fetchAll() async {
@@ -126,6 +131,27 @@ class SupabaseAdminScenarioRepository implements AdminScenarioRepository {
       'scenario_ids': scenarioIds,
       if (batchId != null) 'batch_id': batchId,
       'detail': detail,
+    });
+  }
+
+  @override
+  Future<void> saveSafetyReview(
+      {required String scenarioId,
+      required int contentRevision,
+      required ScenarioSafetyReview review}) async {
+    await _client.from('scenario_safety_reviews').insert({
+      'scenario_id': scenarioId,
+      'content_revision': contentRevision,
+      'decision': review.decision,
+      'findings': review.findings,
+      'rationale': review.rationale,
+      'hostile_content_as_training': review.hostileContentAsTraining,
+      'protected_trait_linkage': review.protectedTraitLinkage,
+      'stereotype_risk': review.stereotypeRisk,
+      'provider': review.provider,
+      'model': review.model,
+      'prompt_version': review.promptVersion,
+      'reviewed_by': _userId,
     });
   }
 }

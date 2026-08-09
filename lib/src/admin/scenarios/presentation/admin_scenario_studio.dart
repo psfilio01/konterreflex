@@ -6,6 +6,7 @@ import 'package:konterreflex/src/core/audio/just_audio_playback_queue.dart';
 import 'package:konterreflex/src/core/audio/supabase_speech_gateway.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
+import 'package:konterreflex/src/admin/knowledge/presentation/knowledge_admin_screen.dart';
 
 class AdminScenarioStudio extends ConsumerStatefulWidget {
   const AdminScenarioStudio({super.key});
@@ -30,6 +31,14 @@ class _AdminScenarioStudioState extends ConsumerState<AdminScenarioStudio> {
       appBar: AppBar(
         title: const Text('Konterreflex · Szenario-Studio'),
         actions: [
+          IconButton(
+            tooltip: 'Kommunikationswissen',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                  builder: (_) => const KnowledgeAdminScreen()),
+            ),
+            icon: const Icon(Icons.library_books_outlined),
+          ),
           IconButton(
               tooltip: 'Aktualisieren',
               onPressed: () => ref.invalidate(adminScenariosProvider),
@@ -95,6 +104,7 @@ class _AdminScenarioStudioState extends ConsumerState<AdminScenarioStudio> {
                             }),
                             onEdit: () => _edit(scenario, voiceOptions),
                             onPreview: () => _preview(scenario),
+                            onSafety: () => _safetyReview(scenario),
                             onReview: (status) =>
                                 _review(status, ids: [scenario.id!]),
                           );
@@ -202,6 +212,13 @@ class _AdminScenarioStudioState extends ConsumerState<AdminScenarioStudio> {
       } finally {
         await queue.dispose();
       }
+    });
+  }
+
+  Future<void> _safetyReview(AdminScenario scenario) async {
+    await _run(() async {
+      await ref.read(adminScenarioSafetyProvider).review(scenario);
+      ref.invalidate(adminScenariosProvider);
     });
   }
 
@@ -323,12 +340,14 @@ class _ScenarioReviewCard extends StatelessWidget {
       required this.onSelected,
       required this.onEdit,
       required this.onPreview,
+      required this.onSafety,
       required this.onReview});
   final AdminScenario scenario;
   final bool selected;
   final ValueChanged<bool> onSelected;
   final VoidCallback onEdit;
   final VoidCallback onPreview;
+  final VoidCallback onSafety;
   final ValueChanged<AdminScenarioStatus> onReview;
 
   @override
@@ -340,7 +359,7 @@ class _ScenarioReviewCard extends StatelessWidget {
               onChanged: (value) => onSelected(value ?? false)),
           title: Text(scenario.title),
           subtitle: Text(
-              '${scenario.category} · ${_statusLabel(scenario.status)} · ${scenario.source}'),
+              '${scenario.category} · ${_statusLabel(scenario.status)} · Safety: ${_safetyLabel(scenario.safetyDecision)} · ${scenario.source}'),
           childrenPadding: const EdgeInsets.fromLTRB(
               AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
           children: [
@@ -371,12 +390,18 @@ class _ScenarioReviewCard extends StatelessWidget {
                     icon: const Icon(Icons.volume_up_outlined),
                     label: const Text('Stimmen abspielen')),
                 OutlinedButton.icon(
+                    onPressed: onSafety,
+                    icon: const Icon(Icons.shield_outlined),
+                    label: const Text('Safety prüfen')),
+                OutlinedButton.icon(
                     onPressed: onEdit,
                     icon: const Icon(Icons.edit_outlined),
                     label: const Text('Bearbeiten')),
                 if (scenario.status != AdminScenarioStatus.active)
                   FilledButton(
-                      onPressed: () => onReview(AdminScenarioStatus.active),
+                      onPressed: scenario.safetyDecision == 'pass'
+                          ? () => onReview(AdminScenarioStatus.active)
+                          : null,
                       child: const Text('Freigeben')),
                 TextButton(
                     onPressed: () => onReview(AdminScenarioStatus.rejected),
@@ -396,6 +421,13 @@ String _statusLabel(AdminScenarioStatus status) => switch (status) {
       AdminScenarioStatus.active => 'Aktiv',
       AdminScenarioStatus.rejected => 'Abgelehnt',
       AdminScenarioStatus.archived => 'Archiviert',
+    };
+
+String _safetyLabel(String? decision) => switch (decision) {
+      'pass' => 'bestanden',
+      'needs_review' => 'manuell prüfen',
+      'block' => 'blockiert',
+      _ => 'offen',
     };
 
 class _ScenarioEditorDialog extends StatefulWidget {
@@ -692,9 +724,10 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
               .toList(),
           characters: characters,
           turns: turns,
-          status: AdminScenarioStatus.draft,
-          source: widget.scenario?.source ?? 'manual',
-        ));
+      status: AdminScenarioStatus.draft,
+      source: widget.scenario?.source ?? 'manual',
+      contentRevision: widget.scenario?.contentRevision ?? 1,
+    ));
   }
 }
 
