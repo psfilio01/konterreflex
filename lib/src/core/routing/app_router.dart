@@ -6,6 +6,9 @@ import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart'
 import 'package:konterreflex/src/features/home/home_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
+import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
+import 'package:konterreflex/src/features/training/presentation/scenario_session_screen.dart';
+import 'package:konterreflex/src/features/training/presentation/training_screen.dart';
 import 'package:konterreflex/src/shared/widgets/feature_placeholder_screen.dart';
 
 abstract final class AppRoute {
@@ -15,6 +18,7 @@ abstract final class AppRoute {
   static const onboarding = 'onboarding';
   static const settings = 'settings';
   static const training = 'training';
+  static const trainingSession = 'training-session';
   static const realLife = 'real-life';
   static const speechChallenge = 'speech-challenge';
   static const goldenBook = 'golden-book';
@@ -78,11 +82,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/training',
         name: AppRoute.training,
-        builder: (context, state) => const FeaturePlaceholderScreen(
-          title: 'Training',
-          description:
-              'Wähle bald eine Situation und antworte direkt mit deiner Stimme.',
-        ),
+        builder: (context, state) => const TrainingScreen(),
+        routes: [
+          GoRoute(
+            path: 'scenario/:scenarioId',
+            name: AppRoute.trainingSession,
+            redirect: (context, state) =>
+                state.extra is TrainingScenario ? null : '/training',
+            builder: (context, state) => ScenarioSessionScreen(
+              scenario: state.extra! as TrainingScenario,
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/real-life',

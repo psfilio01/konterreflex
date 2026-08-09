@@ -93,6 +93,23 @@ class VoiceTurnController extends ChangeNotifier {
   Future<void> stopAndProcess({
     required Future<String> Function(String transcript) buildFeedback,
   }) async {
+    final transcription = await stopAndTranscribe();
+    if (transcription == null) return;
+    try {
+      final feedback = await buildFeedback(transcription.transcript);
+      await presentFeedback(feedback);
+    } catch (_) {
+      if (_machine.state == VoiceTurnState.processing) {
+        _machine.interrupt();
+        _publish(
+          message:
+              'Deine Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.',
+        );
+      }
+    }
+  }
+
+  Future<TranscriptionResult?> stopAndTranscribe() async {
     if (_machine.state != VoiceTurnState.recording) {
       throw StateError('No voice recording is active.');
     }
@@ -101,14 +118,28 @@ class VoiceTurnController extends ChangeNotifier {
       final audio = await _recorder.stop();
       _moveTo(VoiceTurnState.processing);
       final transcription = await _speech.transcribe(audio);
-      if (operation != _operation) return;
-      final feedback = await buildFeedback(transcription.transcript);
-      if (operation != _operation) return;
-      _moveTo(
-        VoiceTurnState.feedback,
-        transcript: transcription.transcript,
-        feedback: feedback,
-      );
+      if (operation != _operation) return null;
+      _publish(transcript: transcription.transcript);
+      return transcription;
+    } catch (_) {
+      if (operation == _operation) {
+        _machine.interrupt();
+        _publish(
+          message:
+              'Deine Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.',
+        );
+      }
+      return null;
+    }
+  }
+
+  Future<void> presentFeedback(String feedback) async {
+    if (_machine.state != VoiceTurnState.processing) {
+      throw StateError('No processed response is awaiting feedback.');
+    }
+    final operation = ++_operation;
+    try {
+      _moveTo(VoiceTurnState.feedback, feedback: feedback);
       await _playback.enqueue(
         await _speech.synthesize(
           SpeechLine(text: feedback, role: VoiceRole.intelligence),
@@ -118,7 +149,6 @@ class VoiceTurnController extends ChangeNotifier {
       if (operation == _operation) {
         _moveTo(
           VoiceTurnState.followUp,
-          transcript: transcription.transcript,
           feedback: feedback,
         );
       }
@@ -132,6 +162,15 @@ class VoiceTurnController extends ChangeNotifier {
     }
   }
 
+  void finishWithoutFeedback() {
+    if (_machine.state != VoiceTurnState.processing) {
+      throw StateError('No processed response can be completed.');
+    }
+    _machine.transitionTo(VoiceTurnState.awaitingUser);
+    _machine.transitionTo(VoiceTurnState.idle);
+    _publish();
+  }
+
   Future<void> interrupt() async {
     _operation += 1;
     await _playback.stop();
@@ -141,6 +180,13 @@ class VoiceTurnController extends ChangeNotifier {
   }
 
   Future<bool> openMicrophoneSettings() => _permission.openSettings();
+
+  void reset() {
+    _operation += 1;
+    _machine.reset();
+    _snapshot = const VoiceTurnSnapshot(state: VoiceTurnState.idle);
+    notifyListeners();
+  }
 
   void _moveTo(
     VoiceTurnState state, {
