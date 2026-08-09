@@ -3,9 +3,11 @@ import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 
 class QualitativeFeedbackCard extends StatelessWidget {
-  const QualitativeFeedbackCard({required this.feedback, super.key});
+  const QualitativeFeedbackCard(
+      {required this.feedback, this.onSavePhrase, super.key});
 
   final QualitativeFeedback feedback;
+  final Future<void> Function(String phrase)? onSavePhrase;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +44,22 @@ class QualitativeFeedbackCard extends StatelessWidget {
                 title: const Text('Natürliche Alternativen'),
                 children: [
                   for (final alternative in feedback.alternatives)
-                    _FeedbackPoint(
-                      icon: Icons.format_quote_rounded,
-                      text: alternative,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _FeedbackPoint(
+                            icon: Icons.format_quote_rounded,
+                            text: alternative,
+                            selectable: true,
+                          ),
+                        ),
+                        if (onSavePhrase != null)
+                          IconButton(
+                            tooltip: 'Im Golden Book speichern',
+                            onPressed: () => onSavePhrase!(alternative),
+                            icon: const Icon(Icons.bookmark_add_outlined),
+                          ),
+                      ],
                     ),
                 ],
               ),
@@ -57,10 +72,12 @@ class QualitativeFeedbackCard extends StatelessWidget {
 }
 
 class _FeedbackPoint extends StatelessWidget {
-  const _FeedbackPoint({required this.icon, required this.text});
+  const _FeedbackPoint(
+      {required this.icon, required this.text, this.selectable = false});
 
   final IconData icon;
   final String text;
+  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +88,7 @@ class _FeedbackPoint extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.sage),
           const SizedBox(width: AppSpacing.sm),
-          Expanded(child: Text(text)),
+          Expanded(child: selectable ? SelectableText(text) : Text(text)),
         ],
       ),
     );

@@ -4,6 +4,7 @@ import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/auth/presentation/auth_loading_screen.dart';
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
 import 'package:konterreflex/src/features/home/home_screen.dart';
+import 'package:konterreflex/src/features/golden_book/presentation/golden_book_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
@@ -11,7 +12,6 @@ import 'package:konterreflex/src/features/speech_challenge/presentation/speech_c
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/scenario_session_screen.dart';
 import 'package:konterreflex/src/features/training/presentation/training_screen.dart';
-import 'package:konterreflex/src/shared/widgets/feature_placeholder_screen.dart';
 
 abstract final class AppRoute {
   static const home = 'home';
@@ -110,11 +110,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/golden-book',
         name: AppRoute.goldenBook,
-        builder: (context, state) => const FeaturePlaceholderScreen(
-          title: 'Golden Book',
-          description:
-              'Sammle Formulierungen, die sich natürlich und stark anfühlen.',
-        ),
+        builder: (context, state) => const GoldenBookScreen(),
       ),
     ],
   );
