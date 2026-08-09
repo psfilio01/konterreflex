@@ -109,6 +109,7 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
       statements: textList(12),
       trigger_statement: text(),
       observable_tone: text(),
+      emotional_social_tension: text(),
       original_reaction: text(),
       unresolved_questions: textList(4),
     }),
