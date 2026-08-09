@@ -32,3 +32,8 @@ enabled = true
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["konterreflex://login-callback", "http://localhost:*"]
 jwt_expiry = 3600
+
+[functions.ai-gateway]
+enabled = true
+verify_jwt = true
+static_files = ["./prompts/*.md"]
