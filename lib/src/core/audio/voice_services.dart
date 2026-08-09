@@ -23,6 +23,10 @@ abstract interface class VoiceRecorder {
   Future<void> dispose();
 }
 
+abstract interface class HandsFreeVoiceRecorder implements VoiceRecorder {
+  Future<RecordedAudio> recordUntilSilence();
+}
+
 abstract interface class AudioPlaybackQueue {
   Future<void> enqueue(SpeechClip clip);
 
