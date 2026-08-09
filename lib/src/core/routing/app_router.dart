@@ -6,6 +6,7 @@ import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart'
 import 'package:konterreflex/src/features/home/home_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
+import 'package:konterreflex/src/shared/widgets/feature_placeholder_screen.dart';
 
 abstract final class AppRoute {
   static const home = 'home';
@@ -13,6 +14,10 @@ abstract final class AppRoute {
   static const signIn = 'sign-in';
   static const onboarding = 'onboarding';
   static const settings = 'settings';
+  static const training = 'training';
+  static const realLife = 'real-life';
+  static const speechChallenge = 'speech-challenge';
+  static const goldenBook = 'golden-book';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -69,6 +74,42 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         name: AppRoute.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/training',
+        name: AppRoute.training,
+        builder: (context, state) => const FeaturePlaceholderScreen(
+          title: 'Training',
+          description:
+              'Wähle bald eine Situation und antworte direkt mit deiner Stimme.',
+        ),
+      ),
+      GoRoute(
+        path: '/real-life',
+        name: AppRoute.realLife,
+        builder: (context, state) => const FeaturePlaceholderScreen(
+          title: 'Echte Situation',
+          description:
+              'Erzähle, was passiert ist, und probiere deine Antwort noch einmal.',
+        ),
+      ),
+      GoRoute(
+        path: '/speech-challenge',
+        name: AppRoute.speechChallenge,
+        builder: (context, state) => const FeaturePlaceholderScreen(
+          title: 'Speech Challenge',
+          description:
+              'Reagiere spontan auf einen kurzen kommunikativen Impuls.',
+        ),
+      ),
+      GoRoute(
+        path: '/golden-book',
+        name: AppRoute.goldenBook,
+        builder: (context, state) => const FeaturePlaceholderScreen(
+          title: 'Golden Book',
+          description:
+              'Sammle Formulierungen, die sich natürlich und stark anfühlen.',
+        ),
       ),
     ],
   );

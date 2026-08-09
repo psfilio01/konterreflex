@@ -11,7 +11,11 @@ class AuthLoadingScreen extends StatelessWidget {
         child: Center(
           child: Semantics(
             label: 'Anmeldung wird geprüft',
-            child: const IntelligenceOrb(size: 88),
+            child: const IntelligenceOrb(
+              size: 88,
+              state: IntelligenceOrbState.thinking,
+              showStatusLabel: false,
+            ),
           ),
         ),
       ),
