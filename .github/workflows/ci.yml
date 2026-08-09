@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: Flutter analyze, test and web builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.32.4
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build user web app
+        run: >-
+          flutter build web --release
+          --dart-define=APP_ENV=production
+          --dart-define=SUPABASE_URL=https://ci.supabase.co
+          --dart-define=SUPABASE_ANON_KEY=sb_publishable_ci_public
+      - name: Build admin web app
+        run: >-
+          flutter build web --release -t lib/main_admin.dart
+          --dart-define=APP_ENV=production
+          --dart-define=SUPABASE_URL=https://ci.supabase.co
+          --dart-define=SUPABASE_ANON_KEY=sb_publishable_ci_public
+
+  edge-functions:
+    name: Supabase function checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.9.3
+      - run: deno fmt --check supabase/functions
+      - run: deno check supabase/functions/*/index.ts
+      - run: deno test --allow-env supabase/functions
+
+  database:
+    name: Supabase database tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.90.0
+      - name: Start local database services
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - run: supabase db reset
+      - run: supabase test db
+      - name: Stop local services
+        if: always()
+        run: supabase stop --no-backup

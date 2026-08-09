@@ -42,6 +42,17 @@ flutter analyze
 flutter test
 ```
 
+Release preparation is documented in:
+
+- `docs/RELEASE_CHECKLIST.md` — all automated and manual launch gates
+- `docs/ENVIRONMENT.md` — public configuration and server-side secrets
+- `docs/STORE_BUILDS.md` — Android/iOS build and subscription blockers
+- `docs/ADMIN_DEPLOYMENT.md` — isolated admin web deployment
+
+The checked-in launcher artwork is a generated placeholder pending final brand
+approval. Production configuration can be audited without printing secrets via
+`./scripts/check_release_config.sh`.
+
 Stop local services with `supabase stop`.
 
 ### Serverseitige Provider-Konfiguration

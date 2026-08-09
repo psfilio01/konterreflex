@@ -6,7 +6,10 @@ export class StripeApi {
     if (!secretKey) throw new Error("Missing Stripe secret key.");
   }
 
-  async post(path: string, fields: Record<string, string>): Promise<Record<string, unknown>> {
+  async post(
+    path: string,
+    fields: Record<string, string>,
+  ): Promise<Record<string, unknown>> {
     const response = await this.fetcher(`https://api.stripe.com/v1/${path}`, {
       method: "POST",
       headers: {
@@ -16,7 +19,9 @@ export class StripeApi {
       body: new URLSearchParams(fields),
     });
     const body: unknown = await response.json();
-    if (!response.ok || !isRecord(body)) throw new Error("Stripe request failed.");
+    if (!response.ok || !isRecord(body)) {
+      throw new Error("Stripe request failed.");
+    }
     return body;
   }
 }
