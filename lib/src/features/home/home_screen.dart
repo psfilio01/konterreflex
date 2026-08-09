@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:konterreflex/src/core/analytics/analytics_providers.dart';
+import 'package:konterreflex/src/core/analytics/privacy_analytics.dart';
 import 'package:konterreflex/src/core/routing/app_router.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   static const _modes = [
@@ -13,33 +18,42 @@ class HomeScreen extends StatelessWidget {
       title: 'Training',
       description: 'Alltagssituationen sicher durchspielen',
       icon: Icons.forum_outlined,
+      analyticsFeature: AnalyticsFeature.training,
     ),
     _HomeMode(
       route: AppRoute.realLife,
       title: 'Echte Situation',
       description: 'Erlebtes rekonstruieren und neu beantworten',
       icon: Icons.replay_rounded,
+      analyticsFeature: AnalyticsFeature.realLife,
     ),
     _HomeMode(
       route: AppRoute.speechChallenge,
       title: 'Speech Challenge',
       description: 'Kurz und spontan auf einen Impuls reagieren',
       icon: Icons.bolt_outlined,
+      analyticsFeature: AnalyticsFeature.speechChallenge,
     ),
     _HomeMode(
       route: AppRoute.goldenBook,
       title: 'Golden Book',
       description: 'Starke Formulierungen griffbereit sammeln',
       icon: Icons.auto_stories_outlined,
+      analyticsFeature: AnalyticsFeature.goldenBook,
     ),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Konterreflex'),
         actions: [
+          IconButton(
+            tooltip: 'Verlauf',
+            onPressed: () => context.pushNamed(AppRoute.history),
+            icon: const Icon(Icons.history_rounded),
+          ),
           IconButton(
             tooltip: 'Einstellungen',
             onPressed: () => context.pushNamed(AppRoute.settings),
@@ -92,7 +106,20 @@ class HomeScreen extends StatelessWidget {
                           for (final mode in _modes)
                             SizedBox(
                               width: cardWidth,
-                              child: _HomeModeCard(mode: mode),
+                              child: _HomeModeCard(
+                                mode: mode,
+                                onTap: () {
+                                  unawaited(ref
+                                      .read(privacyAnalyticsProvider)
+                                      .track(PrivacyAnalyticsEvent(
+                                        name: AnalyticsEventName.modeOpened,
+                                        feature: mode.analyticsFeature,
+                                        step: AnalyticsStep.entry,
+                                      ))
+                                      .catchError((_) {}));
+                                  context.pushNamed(mode.route);
+                                },
+                              ),
                             ),
                         ],
                       ),
@@ -116,25 +143,28 @@ class _HomeMode {
     required this.title,
     required this.description,
     required this.icon,
+    required this.analyticsFeature,
   });
 
   final String route;
   final String title;
   final String description;
   final IconData icon;
+  final AnalyticsFeature analyticsFeature;
 }
 
 class _HomeModeCard extends StatelessWidget {
-  const _HomeModeCard({required this.mode});
+  const _HomeModeCard({required this.mode, required this.onTap});
 
   final _HomeMode mode;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.pushNamed(mode.route),
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Row(

@@ -46,6 +46,18 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         children: [
           ListTile(
+            leading: const Icon(Icons.shield_outlined),
+            title: const Text('Datenschutz & Speicherung'),
+            subtitle: const Text('Aufbewahrung und Produktanalyse steuern'),
+            onTap: () => context.pushNamed(AppRoute.privacy),
+          ),
+          ListTile(
+            leading: const Icon(Icons.history_rounded),
+            title: const Text('Verlauf und Daten löschen'),
+            onTap: () => context.pushNamed(AppRoute.history),
+          ),
+          const Divider(height: 40),
+          ListTile(
             leading: const Icon(Icons.workspace_premium_outlined),
             title: const Text('Abo und Zugriff'),
             subtitle:

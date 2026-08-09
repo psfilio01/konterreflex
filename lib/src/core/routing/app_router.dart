@@ -4,10 +4,12 @@ import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/auth/presentation/auth_loading_screen.dart';
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
 import 'package:konterreflex/src/features/home/home_screen.dart';
+import 'package:konterreflex/src/features/history/presentation/history_screen.dart';
 import 'package:konterreflex/src/features/golden_book/presentation/golden_book_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
+import 'package:konterreflex/src/features/settings/privacy_settings_screen.dart';
 import 'package:konterreflex/src/features/subscription/subscription_screen.dart';
 import 'package:konterreflex/src/features/speech_challenge/presentation/speech_challenge_screen.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
@@ -26,6 +28,8 @@ abstract final class AppRoute {
   static const speechChallenge = 'speech-challenge';
   static const goldenBook = 'golden-book';
   static const subscription = 'subscription';
+  static const history = 'history';
+  static const privacy = 'privacy';
 }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -82,6 +86,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings',
         name: AppRoute.settings,
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/privacy',
+        name: AppRoute.privacy,
+        builder: (context, state) => const PrivacySettingsScreen(),
+      ),
+      GoRoute(
+        path: '/history',
+        name: AppRoute.history,
+        builder: (context, state) => const HistoryScreen(),
       ),
       GoRoute(
         path: '/subscription',

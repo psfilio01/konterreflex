@@ -11,6 +11,7 @@ import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_session_controller.dart';
 import 'package:konterreflex/src/features/golden_book/application/golden_book_providers.dart';
+import 'package:konterreflex/src/core/analytics/analytics_providers.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_card.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
@@ -39,6 +40,7 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
       repository: ref.read(scenarioRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
       goldenBookCapture: ref.read(goldenBookCaptureProvider),
+      analytics: ref.read(privacyAnalyticsProvider),
       voice: VoiceTurnController(
         permission: PermissionHandlerMicrophone(),
         recorder: RecordVoiceRecorder(),
