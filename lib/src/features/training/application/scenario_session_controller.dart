@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
+import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
 import 'package:konterreflex/src/features/training/data/scenario_repository.dart';
+import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 
 enum ScenarioSessionStatus {
@@ -14,7 +16,9 @@ enum ScenarioSessionStatus {
   awaitingResponse,
   recording,
   processing,
-  completed,
+  feedbackReady,
+  followUpRecording,
+  followUpProcessing,
   error,
 }
 
@@ -22,10 +26,13 @@ class ScenarioSessionController extends ChangeNotifier {
   ScenarioSessionController({
     required this.scenario,
     required ScenarioRepository repository,
+    required FeedbackRepository feedbackRepository,
     required VoiceTurnController voice,
     String Function()? createId,
   })  : _repository = repository,
+        _feedbackRepository = feedbackRepository,
         _voice = voice,
+        _createId = createId ?? createClientUuid,
         _sessionClientId = (createId ?? createClientUuid)(),
         _responseClientId = (createId ?? createClientUuid)() {
     _voice.addListener(_relayVoiceState);
@@ -33,17 +40,24 @@ class ScenarioSessionController extends ChangeNotifier {
 
   final TrainingScenario scenario;
   final ScenarioRepository _repository;
+  final FeedbackRepository _feedbackRepository;
   final VoiceTurnController _voice;
-  final String _sessionClientId;
-  final String _responseClientId;
+  final String Function() _createId;
+  String _sessionClientId;
+  String _responseClientId;
   TrainingSessionRecord? _session;
+  String? _responseId;
   String? _transcript;
+  QualitativeFeedback? _feedback;
+  String? _followUpAnswer;
   ScenarioSessionStatus _status = ScenarioSessionStatus.ready;
   String? _message;
 
   ScenarioSessionStatus get status => _status;
   VoiceTurnSnapshot get voice => _voice.snapshot;
   String? get transcript => _transcript;
+  QualitativeFeedback? get feedback => _feedback;
+  String? get followUpAnswer => _followUpAnswer;
   String? get message => _message ?? _voice.snapshot.message;
 
   Future<void> start() async {
@@ -98,20 +112,80 @@ class ScenarioSessionController extends ChangeNotifier {
     }
     _setStatus(ScenarioSessionStatus.processing);
     try {
-      await _repository.saveResponse(
+      _responseId ??= await _repository.saveResponse(
         sessionId: session.id,
         clientId: _responseClientId,
         transcript: transcript,
       );
+      _feedback ??= await _feedbackRepository.evaluate(
+        scenario: scenario,
+        transcript: transcript,
+      );
+      await _feedbackRepository.save(
+        responseId: _responseId!,
+        feedback: _feedback!,
+      );
       await _repository.completeSession(session.id);
       if (_voice.snapshot.state == VoiceTurnState.processing) {
-        _voice.finishWithoutFeedback();
+        await _voice.presentFeedback(_feedback!.spokenSummary);
       }
-      _setStatus(ScenarioSessionStatus.completed);
+      _setStatus(ScenarioSessionStatus.feedbackReady);
     } catch (_) {
       _setError(
-          'Die Antwort ist noch nicht gespeichert. Bitte versuche es erneut.');
+        'Feedback und Antwort sind noch nicht vollständig gespeichert. Bitte versuche es erneut.',
+      );
     }
+  }
+
+  Future<void> startFollowUp() async {
+    if (_feedback == null) return;
+    try {
+      _voice.prepareFollowUpRecording();
+      final permission = await _voice.startRecording();
+      if (permission == MicrophonePermissionStatus.granted &&
+          _voice.snapshot.state == VoiceTurnState.recording) {
+        _setStatus(ScenarioSessionStatus.followUpRecording);
+      } else {
+        _setStatus(ScenarioSessionStatus.feedbackReady);
+      }
+    } catch (_) {
+      _setError('Die Rückfrage konnte nicht gestartet werden.');
+    }
+  }
+
+  Future<void> submitFollowUp() async {
+    final feedback = _feedback;
+    if (feedback == null) return;
+    _setStatus(ScenarioSessionStatus.followUpProcessing);
+    final question = await _voice.stopAndTranscribe();
+    if (question == null) {
+      _setError('Die Rückfrage konnte nicht verstanden werden.');
+      return;
+    }
+    try {
+      final answer = await _feedbackRepository.answerFollowUp(
+        scenario: scenario,
+        feedback: feedback,
+        question: question.transcript,
+      );
+      _followUpAnswer = answer;
+      await _voice.presentFeedback(answer);
+      _setStatus(ScenarioSessionStatus.feedbackReady);
+    } catch (_) {
+      _setError('Die Rückfrage konnte gerade nicht beantwortet werden.');
+    }
+  }
+
+  void retryScene() {
+    _voice.reset();
+    _sessionClientId = _createId();
+    _responseClientId = _createId();
+    _session = null;
+    _responseId = null;
+    _transcript = null;
+    _feedback = null;
+    _followUpAnswer = null;
+    _setStatus(ScenarioSessionStatus.ready);
   }
 
   Future<void> interrupt() => _voice.interrupt();

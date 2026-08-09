@@ -181,6 +181,14 @@ class VoiceTurnController extends ChangeNotifier {
 
   Future<bool> openMicrophoneSettings() => _permission.openSettings();
 
+  void prepareFollowUpRecording() {
+    if (_machine.state != VoiceTurnState.followUp) {
+      throw StateError('No feedback conversation is active.');
+    }
+    _machine.transitionTo(VoiceTurnState.awaitingUser);
+    _publish();
+  }
+
   void reset() {
     _operation += 1;
     _machine.reset();

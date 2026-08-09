@@ -11,6 +11,7 @@ import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_session_controller.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
+import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_card.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 import 'package:konterreflex/src/shared/widgets/optional_transcript.dart';
 import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
@@ -35,6 +36,7 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
     _controller = ScenarioSessionController(
       scenario: widget.scenario,
       repository: ref.read(scenarioRepositoryProvider),
+      feedbackRepository: ref.read(feedbackRepositoryProvider),
       voice: VoiceTurnController(
         permission: PermissionHandlerMicrophone(),
         recorder: RecordVoiceRecorder(),
@@ -104,6 +106,19 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         OptionalTranscript(transcript: transcript),
                       ],
+                      if (_controller.feedback case final feedback?) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        QualitativeFeedbackCard(feedback: feedback),
+                      ],
+                      if (_controller.followUpAnswer case final answer?) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            child: Text(answer),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -122,7 +137,10 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
         ScenarioSessionStatus.awaitingResponse => 'Wie antwortest du?',
         ScenarioSessionStatus.recording => 'Du sprichst',
         ScenarioSessionStatus.processing => 'Antwort wird verarbeitet …',
-        ScenarioSessionStatus.completed => 'Antwort gespeichert',
+        ScenarioSessionStatus.feedbackReady => 'Dein Feedback',
+        ScenarioSessionStatus.followUpRecording => 'Deine Rückfrage',
+        ScenarioSessionStatus.followUpProcessing =>
+          'Rückfrage wird beantwortet …',
         ScenarioSessionStatus.error => 'Noch nicht abgeschlossen',
       };
 }
@@ -149,6 +167,28 @@ class _PrimaryAction extends StatelessWidget {
           onPressed: controller.submitResponse,
           icon: const Icon(Icons.stop_rounded),
           label: const Text('Aufnahme beenden'),
+        ),
+      ScenarioSessionStatus.followUpRecording => FilledButton.icon(
+          onPressed: controller.submitFollowUp,
+          icon: const Icon(Icons.stop_rounded),
+          label: const Text('Rückfrage senden'),
+        ),
+      ScenarioSessionStatus.feedbackReady => Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          alignment: WrapAlignment.center,
+          children: [
+            FilledButton.icon(
+              onPressed: controller.startFollowUp,
+              icon: const Icon(Icons.mic_none_rounded),
+              label: const Text('Rückfrage stellen'),
+            ),
+            OutlinedButton.icon(
+              onPressed: controller.retryScene,
+              icon: const Icon(Icons.replay_rounded),
+              label: const Text('Szene wiederholen'),
+            ),
+          ],
         ),
       ScenarioSessionStatus.error when controller.transcript != null =>
         FilledButton(

@@ -136,3 +136,30 @@ Deno.test("aborts provider work at the configured timeout", async () => {
   assert(response.status === 504, "expected gateway timeout");
   assert(body.error.code === "provider_timeout", "expected timeout code");
 });
+
+Deno.test("rejects numeric scoring fields in response evaluation", async () => {
+  const provider = new MockAiProvider({
+    headline: "Klar",
+    explanation: "Die Aussage ist verständlich.",
+    strengths: ["Ruhiger Einstieg"],
+    improvement: "Nenne den nächsten Schritt.",
+    alternatives: ["Ich sehe das anders."],
+    dimensions: {
+      posture: "ruhig",
+      precision: "klar",
+      frame: "neu gesetzt",
+      social_effect: "anschlussfähig",
+      naturalness: "sprechbar",
+      escalation_fit: "passend",
+    },
+    score: 8,
+  });
+  const response = await handlerFor(provider)(request("response.evaluate"));
+  const body = await response.json();
+
+  assert(response.status === 502, "expected schema rejection");
+  assert(
+    body.error.code === "invalid_provider_response",
+    "expected validation error",
+  );
+});
