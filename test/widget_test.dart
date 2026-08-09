@@ -34,6 +34,10 @@ void main() {
 
     expect(find.text('Konterreflex'), findsOneWidget);
     expect(find.byTooltip('Einstellungen'), findsOneWidget);
+    expect(find.text('Training'), findsOneWidget);
+    expect(find.text('Echte Situation'), findsOneWidget);
+    expect(find.text('Speech Challenge'), findsOneWidget);
+    expect(find.text('Golden Book'), findsOneWidget);
   });
 
   testWidgets('signed out users are redirected to sign in', (tester) async {
