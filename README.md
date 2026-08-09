@@ -25,8 +25,8 @@ flutter run --dart-define-from-file=.env.local
 flutter run -d chrome --dart-define-from-file=.env.local
 ```
 
-For an Android emulator, use `http://10.0.2.2:54321` as `SUPABASE_URL`. The
-iOS simulator and web use `http://127.0.0.1:54321`.
+For an Android emulator, use `http://10.0.2.2:55421` as `SUPABASE_URL`. The
+iOS simulator and web use `http://127.0.0.1:55421`.
 
 Run the web admin entry point with:
 
