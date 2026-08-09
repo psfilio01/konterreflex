@@ -5,11 +5,11 @@ void main() {
   group('AppConfig', () {
     test('accepts a public Supabase client configuration', () {
       final config = AppConfig(
-        supabaseUrl: 'http://127.0.0.1:54321',
+        supabaseUrl: 'http://127.0.0.1:55421',
         supabaseAnonKey: 'public-anon-key',
       );
 
-      expect(config.supabaseUrl, 'http://127.0.0.1:54321');
+      expect(config.supabaseUrl, 'http://127.0.0.1:55421');
       expect(config.supabaseAnonKey, 'public-anon-key');
     });
 
@@ -23,7 +23,7 @@ void main() {
     test('rejects a missing anon key', () {
       expect(
         () => AppConfig(
-          supabaseUrl: 'http://127.0.0.1:54321',
+          supabaseUrl: 'http://127.0.0.1:55421',
           supabaseAnonKey: '',
         ),
         throwsFormatException,

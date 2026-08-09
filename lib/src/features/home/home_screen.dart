@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:konterreflex/src/core/routing/app_router.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -6,8 +8,17 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(
+    return Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            tooltip: 'Einstellungen',
+            onPressed: () => context.pushNamed(AppRoute.settings),
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
+      ),
+      body: const SafeArea(
         child: Center(
           child: Padding(
             padding: EdgeInsets.all(24),
