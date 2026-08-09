@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:konterreflex/src/core/routing/app_router.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -43,6 +45,14 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
+          ListTile(
+            leading: const Icon(Icons.workspace_premium_outlined),
+            title: const Text('Abo und Zugriff'),
+            subtitle:
+                const Text('Status prüfen, wiederherstellen oder verwalten'),
+            onTap: () => context.pushNamed(AppRoute.subscription),
+          ),
+          const Divider(height: 40),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Abmelden'),
