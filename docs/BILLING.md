@@ -24,3 +24,8 @@ Keep product limits in database configuration.
 
 ## Compliance gate
 Before shipping store builds, recheck current Apple, Google and Stripe documentation for the intended countries. This is a release task, not a one time assumption.
+
+The Germany/EU policy snapshot and explicit launch blockers are maintained in
+`docs/RELEASE_CHECKLIST.md`. As of the 2026-08-09 review, the conservative
+channel decision is Stripe on web and native store billing on iOS/Android. The
+mobile store adapters must be fully implemented before either store build ships.

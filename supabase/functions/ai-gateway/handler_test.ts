@@ -173,9 +173,17 @@ Deno.test("safety review keeps hostile training context separate from discrimina
     protected_trait_linkage: false,
     stereotype_risk: false,
   });
-  const response = await handlerFor(provider)(request("scenario.safety_review"));
+  const response = await handlerFor(provider)(
+    request("scenario.safety_review"),
+  );
   const body = await response.json();
   assert(response.status === 200, "expected valid safety review");
-  assert(body.data.hostile_content_as_training === true, "expected explicit training context");
-  assert(body.data.protected_trait_linkage === false, "expected no trait linkage");
+  assert(
+    body.data.hostile_content_as_training === true,
+    "expected explicit training context",
+  );
+  assert(
+    body.data.protected_trait_linkage === false,
+    "expected no trait linkage",
+  );
 });

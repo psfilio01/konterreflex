@@ -4,8 +4,12 @@ import { createStripeWebhookHandler } from "./handler.ts";
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-if (!supabaseUrl || !serviceKey || !webhookSecret) throw new Error("Missing Stripe webhook configuration.");
-const admin = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+if (!supabaseUrl || !serviceKey || !webhookSecret) {
+  throw new Error("Missing Stripe webhook configuration.");
+}
+const admin = createClient(supabaseUrl, serviceKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
 
 Deno.serve(createStripeWebhookHandler({
   webhookSecret,
