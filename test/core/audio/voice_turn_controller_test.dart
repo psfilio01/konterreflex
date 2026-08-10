@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -45,6 +46,7 @@ void main() {
     expect(
         states,
         containsAllInOrder([
+          VoiceTurnState.preparing,
           VoiceTurnState.introducing,
           VoiceTurnState.acting,
           VoiceTurnState.awaitingUser,
@@ -143,6 +145,50 @@ void main() {
       throwsA(isA<VoiceStateTransitionError>()),
     );
   });
+
+  test('preparing remains visible until synthesized audio is ready', () async {
+    final speech = _DelayedSpeech();
+    final controller = VoiceTurnController(
+      permission: _MockPermission(MicrophonePermissionStatus.granted),
+      recorder: _MockRecorder(),
+      playback: _MockPlayback(),
+      speech: speech,
+    );
+
+    final playback = controller.playScene(const [
+      SpeechLine(text: 'Eine kurze Situation.', role: VoiceRole.moderator),
+    ]);
+
+    expect(controller.snapshot.state, VoiceTurnState.preparing);
+    speech.complete();
+    await playback;
+    expect(controller.snapshot.state, VoiceTurnState.awaitingUser);
+  });
+
+  test('forwards playback cadence and real microphone activity to the orb',
+      () async {
+    final recorder = _ActivityRecorder();
+    final playback = _ActivityPlayback();
+    final controller = VoiceTurnController(
+      permission: _MockPermission(MicrophonePermissionStatus.granted),
+      recorder: recorder,
+      playback: playback,
+      speech: _MockSpeech(),
+    );
+    final levels = <double>[];
+    controller.voiceActivity.addListener(
+      () => levels.add(controller.voiceActivity.value),
+    );
+
+    await controller.playScene(const [
+      SpeechLine(text: 'Eine kurze Situation.', role: VoiceRole.moderator),
+    ]);
+    expect(levels, contains(closeTo(0.72, 0.001)));
+
+    await controller.startRecording();
+    recorder.emit(0.86);
+    expect(controller.voiceActivity.value, closeTo(0.86, 0.001));
+  });
 }
 
 class _MockPermission implements MicrophonePermissionGateway {
@@ -215,6 +261,47 @@ class _MockSpeech implements SpeechGateway {
       provider: 'mock',
       model: 'mock-stt',
     );
+  }
+}
+
+class _DelayedSpeech extends _MockSpeech {
+  final Completer<SpeechClip> _clip = Completer<SpeechClip>();
+
+  @override
+  Future<SpeechClip> synthesize(SpeechLine line) => _clip.future;
+
+  void complete() {
+    _clip.complete(
+      SpeechClip(
+        bytes: Uint8List.fromList([1, 2, 3]),
+        mimeType: 'audio/mpeg',
+        role: VoiceRole.moderator,
+      ),
+    );
+  }
+}
+
+class _ActivityRecorder extends _MockRecorder implements VoiceActivitySource {
+  final StreamController<double> _activity =
+      StreamController<double>.broadcast(sync: true);
+
+  @override
+  Stream<double> get voiceActivity => _activity.stream;
+
+  void emit(double level) => _activity.add(level);
+}
+
+class _ActivityPlayback extends _MockPlayback implements VoiceActivitySource {
+  final StreamController<double> _activity =
+      StreamController<double>.broadcast(sync: true);
+
+  @override
+  Stream<double> get voiceActivity => _activity.stream;
+
+  @override
+  Future<void> playAll() async {
+    _activity.add(0.72);
+    await super.playAll();
   }
 }
 

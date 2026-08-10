@@ -5,11 +5,19 @@ import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/localization/localization_extension.dart';
 
-enum IntelligenceOrbState { idle, speaking, listening, thinking, success }
+enum IntelligenceOrbState {
+  idle,
+  preparing,
+  speaking,
+  listening,
+  thinking,
+  success,
+}
 
 extension IntelligenceOrbStatePresentation on IntelligenceOrbState {
   String get label => switch (this) {
         IntelligenceOrbState.idle => 'Bereit',
+        IntelligenceOrbState.preparing => 'Audio wird vorbereitet',
         IntelligenceOrbState.speaking => 'Konterreflex spricht',
         IntelligenceOrbState.listening => 'Konterreflex hört zu',
         IntelligenceOrbState.thinking => 'Konterreflex denkt nach',
@@ -18,6 +26,7 @@ extension IntelligenceOrbStatePresentation on IntelligenceOrbState {
 
   String localizedLabel(AppLocalizations l10n) => switch (this) {
         IntelligenceOrbState.idle => l10n.orbReady,
+        IntelligenceOrbState.preparing => l10n.orbPreparing,
         IntelligenceOrbState.speaking => l10n.orbSpeaking,
         IntelligenceOrbState.listening => l10n.orbListening,
         IntelligenceOrbState.thinking => l10n.orbThinking,
@@ -26,6 +35,7 @@ extension IntelligenceOrbStatePresentation on IntelligenceOrbState {
 
   IconData get icon => switch (this) {
         IntelligenceOrbState.idle => Icons.circle_outlined,
+        IntelligenceOrbState.preparing => Icons.hourglass_top_rounded,
         IntelligenceOrbState.speaking => Icons.graphic_eq_rounded,
         IntelligenceOrbState.listening => Icons.mic_none_rounded,
         IntelligenceOrbState.thinking => Icons.more_horiz_rounded,
@@ -39,11 +49,13 @@ class IntelligenceOrb extends StatefulWidget {
     this.size = 132,
     this.state = IntelligenceOrbState.idle,
     this.showStatusLabel = true,
+    this.activityLevel = 0,
   });
 
   final double size;
   final IntelligenceOrbState state;
   final bool showStatusLabel;
+  final double activityLevel;
 
   @override
   State<IntelligenceOrb> createState() => _IntelligenceOrbState();
@@ -97,6 +109,10 @@ class _IntelligenceOrbState extends State<IntelligenceOrb>
 
   List<Color> _colors(ColorScheme scheme) => switch (widget.state) {
         IntelligenceOrbState.idle => [AppColors.mist, AppColors.lavender],
+        IntelligenceOrbState.preparing => [
+            AppColors.lavender,
+            scheme.surfaceContainerHighest,
+          ],
         IntelligenceOrbState.speaking => [
             scheme.primaryContainer,
             AppColors.sand
@@ -116,6 +132,11 @@ class _IntelligenceOrbState extends State<IntelligenceOrb>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final stateLabel = widget.state.localizedLabel(context.l10n);
+    final showsVoiceActivity = widget.state == IntelligenceOrbState.speaking ||
+        widget.state == IntelligenceOrbState.listening;
+    final activityLevel = _reducedMotion && showsVoiceActivity
+        ? 0.32
+        : widget.activityLevel.clamp(0.0, 1.0);
     return Semantics(
       container: true,
       liveRegion: true,
@@ -132,6 +153,7 @@ class _IntelligenceOrbState extends State<IntelligenceOrb>
                 final scale = switch (widget.state) {
                   IntelligenceOrbState.speaking => 1 + wave * 0.035,
                   IntelligenceOrbState.listening => 1 + wave * 0.02,
+                  IntelligenceOrbState.preparing => 1 + wave * 0.01,
                   IntelligenceOrbState.thinking => 1.0,
                   IntelligenceOrbState.success =>
                     1 + math.sin(_controller.value * math.pi) * 0.06,
@@ -149,36 +171,88 @@ class _IntelligenceOrbState extends State<IntelligenceOrb>
                   ),
                 );
               },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                width: widget.size,
-                height: widget.size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: _colors(scheme),
-                  ),
-                  border: Border.all(
-                    color: scheme.onSurface.withValues(alpha: 0.12),
-                    width:
-                        widget.state == IntelligenceOrbState.listening ? 3 : 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.10),
-                      blurRadius: 28,
-                      spreadRadius: 2,
-                    ),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: activityLevel),
+                duration: _reducedMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 90),
+                curve: Curves.easeOut,
+                builder: (context, activity, orb) => Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (showsVoiceActivity)
+                      Transform.scale(
+                        key: const Key('voice-activity-halo'),
+                        scale: 1.08 + activity * 0.22,
+                        child: Container(
+                          width: widget.size,
+                          height: widget.size,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                (widget.state == IntelligenceOrbState.listening
+                                        ? scheme.tertiary
+                                        : scheme.primary)
+                                    .withValues(
+                                  alpha: 0.12 + activity * 0.16,
+                                ),
+                                scheme.surface.withValues(alpha: 0),
+                              ],
+                              stops: const [0.38, 1],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (widget.state ==
+                                            IntelligenceOrbState.listening
+                                        ? scheme.tertiary
+                                        : scheme.primary)
+                                    .withValues(
+                                  alpha: 0.08 + activity * 0.14,
+                                ),
+                                blurRadius: 34 + activity * 24,
+                                spreadRadius: 5 + activity * 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    orb!,
                   ],
                 ),
-                child: Icon(
-                  widget.state.icon,
-                  size: widget.size * 0.28,
-                  color: widget.state == IntelligenceOrbState.success
-                      ? AppColors.success
-                      : AppColors.foreground.withValues(alpha: 0.78),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 280),
+                  width: widget.size,
+                  height: widget.size,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: _colors(scheme),
+                    ),
+                    border: Border.all(
+                      color: scheme.onSurface.withValues(alpha: 0.12),
+                      width: widget.state == IntelligenceOrbState.listening
+                          ? 3
+                          : 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.primary.withValues(alpha: 0.10),
+                        blurRadius: 28,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    widget.state.icon,
+                    size: widget.size * 0.28,
+                    color: widget.state == IntelligenceOrbState.success
+                        ? AppColors.success
+                        : AppColors.foreground.withValues(alpha: 0.78),
+                  ),
                 ),
               ),
             ),

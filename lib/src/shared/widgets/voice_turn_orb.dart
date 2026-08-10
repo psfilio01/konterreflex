@@ -8,6 +8,7 @@ extension VoiceTurnOrbState on VoiceTurnState {
         VoiceTurnState.idle ||
         VoiceTurnState.awaitingUser =>
           IntelligenceOrbState.idle,
+        VoiceTurnState.preparing => IntelligenceOrbState.preparing,
         VoiceTurnState.introducing ||
         VoiceTurnState.acting ||
         VoiceTurnState.feedback =>
@@ -30,11 +31,15 @@ class VoiceTurnOrb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, child) => IntelligenceOrb(
-        size: size,
-        state: controller.snapshot.state.orbState,
+    return ValueListenableBuilder<double>(
+      valueListenable: controller.voiceActivity,
+      builder: (context, activity, child) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, child) => IntelligenceOrb(
+          size: size,
+          state: controller.snapshot.state.orbState,
+          activityLevel: activity,
+        ),
       ),
     );
   }

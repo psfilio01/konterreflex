@@ -1,4 +1,10 @@
+import 'dart:async';
+
 import 'package:konterreflex/src/core/audio/voice_models.dart';
+
+abstract interface class VoiceActivitySource {
+  Stream<double> get voiceActivity;
+}
 
 enum VoiceServiceFailureKind {
   authentication,

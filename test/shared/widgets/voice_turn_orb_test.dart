@@ -6,6 +6,10 @@ import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
 void main() {
   test('voice phases map to understandable orb states', () {
     expect(VoiceTurnState.idle.orbState, IntelligenceOrbState.idle);
+    expect(
+      VoiceTurnState.preparing.orbState,
+      IntelligenceOrbState.preparing,
+    );
     expect(VoiceTurnState.introducing.orbState, IntelligenceOrbState.speaking);
     expect(VoiceTurnState.acting.orbState, IntelligenceOrbState.speaking);
     expect(VoiceTurnState.awaitingUser.orbState, IntelligenceOrbState.idle);

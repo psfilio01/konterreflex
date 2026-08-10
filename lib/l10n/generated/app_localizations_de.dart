@@ -179,6 +179,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get orbReady => 'Bereit';
 
   @override
+  String get orbPreparing => 'Audio wird vorbereitet';
+
+  @override
   String get orbSpeaking => 'Konterreflex spricht';
 
   @override
@@ -644,6 +647,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get realLifeReplayReadyTitle => 'Bereit für den zweiten Versuch?';
+
+  @override
+  String get realLifePreparingPlaybackTitle => 'Szene wird vorbereitet';
 
   @override
   String get realLifePlayingTitle => 'Hör dir die Szene an';

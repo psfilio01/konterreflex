@@ -6,7 +6,8 @@ import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:record/record.dart' as record;
 
-class RecordVoiceRecorder implements HandsFreeVoiceRecorder {
+class RecordVoiceRecorder
+    implements HandsFreeVoiceRecorder, VoiceActivitySource {
   RecordVoiceRecorder({
     record.AudioRecorder? recorder,
     this.silenceDuration = const Duration(milliseconds: 850),
@@ -15,6 +16,8 @@ class RecordVoiceRecorder implements HandsFreeVoiceRecorder {
   }) : _recorder = recorder ?? record.AudioRecorder();
 
   final record.AudioRecorder _recorder;
+  final StreamController<double> _voiceActivityController =
+      StreamController<double>.broadcast(sync: true);
   StreamSubscription<Uint8List>? _subscription;
   Completer<void>? _streamFinished;
   BytesBuilder? _bytes;
@@ -22,6 +25,10 @@ class RecordVoiceRecorder implements HandsFreeVoiceRecorder {
   final Duration silenceDuration;
   final Duration maximumDuration;
   final double speechThreshold;
+  double _smoothedActivity = 0;
+
+  @override
+  Stream<double> get voiceActivity => _voiceActivityController.stream;
 
   @override
   Future<void> start() async {
@@ -48,6 +55,7 @@ class RecordVoiceRecorder implements HandsFreeVoiceRecorder {
     _subscription = stream.listen(
       (chunk) {
         _bytes!.add(chunk);
+        _publishVoiceActivity(chunk);
         _onAudio?.call(chunk);
       },
       onError: _streamFinished!.completeError,
@@ -116,12 +124,29 @@ class RecordVoiceRecorder implements HandsFreeVoiceRecorder {
     _streamFinished = null;
     _bytes = null;
     _onAudio = null;
+    _smoothedActivity = 0;
+    _voiceActivityController.add(0);
+  }
+
+  void _publishVoiceActivity(Uint8List chunk) {
+    final rms = _pcmRms(chunk);
+    final noiseFloor = speechThreshold * 0.16;
+    final target = (rms <= noiseFloor
+            ? 0.0
+            : ((rms - noiseFloor) / (speechThreshold * 2.4)).clamp(0.0, 1.0))
+        .toDouble();
+    final smoothing = target > _smoothedActivity ? 0.52 : 0.2;
+    _smoothedActivity += (target - _smoothedActivity) * smoothing;
+    _voiceActivityController.add(
+      _smoothedActivity.clamp(0.0, 1.0).toDouble(),
+    );
   }
 
   @override
   Future<void> dispose() async {
     await cancel();
     await _recorder.dispose();
+    await _voiceActivityController.close();
   }
 }
 

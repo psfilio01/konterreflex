@@ -1,5 +1,6 @@
 enum VoiceTurnState {
   idle,
+  preparing,
   introducing,
   acting,
   awaitingUser,
@@ -19,7 +20,12 @@ class VoiceStateMachine {
   VoiceTurnState get state => _state;
 
   static const _allowed = <VoiceTurnState, Set<VoiceTurnState>>{
-    VoiceTurnState.idle: {VoiceTurnState.introducing},
+    VoiceTurnState.idle: {VoiceTurnState.preparing},
+    VoiceTurnState.preparing: {
+      VoiceTurnState.introducing,
+      VoiceTurnState.feedback,
+      VoiceTurnState.awaitingUser,
+    },
     VoiceTurnState.introducing: {
       VoiceTurnState.acting,
       VoiceTurnState.awaitingUser,
@@ -37,6 +43,7 @@ class VoiceStateMachine {
       VoiceTurnState.awaitingUser,
     },
     VoiceTurnState.processing: {
+      VoiceTurnState.preparing,
       VoiceTurnState.feedback,
       VoiceTurnState.awaitingUser,
     },

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
@@ -31,7 +34,18 @@ class VoiceTurnController extends ChangeNotifier {
         _recorder = recorder,
         _playback = playback,
         _speech = speech,
-        _strings = strings ?? lookupAppLocalizations(const Locale('de'));
+        _strings = strings ?? lookupAppLocalizations(const Locale('de')) {
+    if (recorder case final VoiceActivitySource source) {
+      _recorderActivitySubscription = source.voiceActivity.listen(
+        _onRecorderActivity,
+      );
+    }
+    if (playback case final VoiceActivitySource source) {
+      _playbackActivitySubscription = source.voiceActivity.listen(
+        _onPlaybackActivity,
+      );
+    }
+  }
 
   final MicrophonePermissionGateway _permission;
   final VoiceRecorder _recorder;
@@ -39,27 +53,37 @@ class VoiceTurnController extends ChangeNotifier {
   final SpeechGateway _speech;
   final AppLocalizations _strings;
   final VoiceStateMachine _machine = VoiceStateMachine();
+  final ValueNotifier<double> _voiceActivity = ValueNotifier(0);
+  StreamSubscription<double>? _recorderActivitySubscription;
+  StreamSubscription<double>? _playbackActivitySubscription;
   VoiceTurnSnapshot _snapshot = const VoiceTurnSnapshot(
     state: VoiceTurnState.idle,
   );
   int _operation = 0;
 
   VoiceTurnSnapshot get snapshot => _snapshot;
+  ValueListenable<double> get voiceActivity => _voiceActivity;
 
   Future<bool> playScene(List<SpeechLine> lines) async {
     if (lines.isEmpty || lines.first.role != VoiceRole.moderator) {
       throw ArgumentError('A voice scene starts with a moderator line.');
     }
     final operation = ++_operation;
-    _moveTo(VoiceTurnState.introducing);
+    _moveTo(VoiceTurnState.preparing);
     try {
+      final prepared = <SpeechClip>[];
       for (final line in lines) {
         if (operation != _operation) return false;
-        if (line.role == VoiceRole.actor &&
-            _machine.state != VoiceTurnState.acting) {
-          _moveTo(VoiceTurnState.acting);
-        }
-        await _playback.enqueue(await _speech.synthesize(line));
+        final clip = await _speech.synthesize(line);
+        if (operation != _operation) return false;
+        prepared.add(clip);
+      }
+      for (final clip in prepared) {
+        await _playback.enqueue(clip);
+      }
+      _moveTo(VoiceTurnState.introducing);
+      if (lines.any((line) => line.role == VoiceRole.actor)) {
+        _moveTo(VoiceTurnState.acting);
       }
       await _playback.playAll();
       if (operation == _operation) _moveTo(VoiceTurnState.awaitingUser);
@@ -199,12 +223,13 @@ class VoiceTurnController extends ChangeNotifier {
     }
     final operation = ++_operation;
     try {
-      _moveTo(VoiceTurnState.feedback, feedback: feedback);
-      await _playback.enqueue(
-        await _speech.synthesize(
-          SpeechLine(text: feedback, role: VoiceRole.intelligence),
-        ),
+      _moveTo(VoiceTurnState.preparing, feedback: feedback);
+      final clip = await _speech.synthesize(
+        SpeechLine(text: feedback, role: VoiceRole.intelligence),
       );
+      if (operation != _operation) return;
+      await _playback.enqueue(clip);
+      _moveTo(VoiceTurnState.feedback, feedback: feedback);
       await _playback.playAll();
       if (operation == _operation) {
         _moveTo(
@@ -251,6 +276,7 @@ class VoiceTurnController extends ChangeNotifier {
     _operation += 1;
     _machine.reset();
     _snapshot = const VoiceTurnSnapshot(state: VoiceTurnState.idle);
+    _voiceActivity.value = 0;
     notifyListeners();
   }
 
@@ -260,8 +286,29 @@ class VoiceTurnController extends ChangeNotifier {
     String? feedback,
   }) {
     _machine.transitionTo(state);
+    if (!_isActivityState(state)) _voiceActivity.value = 0;
     _publish(transcript: transcript, feedback: feedback);
   }
+
+  void _onRecorderActivity(double level) {
+    if (_machine.state == VoiceTurnState.recording) {
+      _voiceActivity.value = level.clamp(0.0, 1.0).toDouble();
+    }
+  }
+
+  void _onPlaybackActivity(double level) {
+    if (_machine.state == VoiceTurnState.introducing ||
+        _machine.state == VoiceTurnState.acting ||
+        _machine.state == VoiceTurnState.feedback) {
+      _voiceActivity.value = level.clamp(0.0, 1.0).toDouble();
+    }
+  }
+
+  bool _isActivityState(VoiceTurnState state) =>
+      state == VoiceTurnState.introducing ||
+      state == VoiceTurnState.acting ||
+      state == VoiceTurnState.recording ||
+      state == VoiceTurnState.feedback;
 
   void _publish({
     String? transcript,
@@ -281,8 +328,11 @@ class VoiceTurnController extends ChangeNotifier {
 
   @override
   void dispose() {
+    unawaited(_recorderActivitySubscription?.cancel());
+    unawaited(_playbackActivitySubscription?.cancel());
     _recorder.dispose();
     _playback.dispose();
+    _voiceActivity.dispose();
     super.dispose();
   }
 }
