@@ -54,6 +54,7 @@ class SpeechChallengeController extends ChangeNotifier {
   ChallengePrompt get currentPrompt => challengeSet.prompts[_promptIndex];
   int get completedCount => _promptIndex;
   VoiceTurnSnapshot get voice => _voice.snapshot;
+  VoiceTurnController get voiceController => _voice;
   QualitativeFeedback? get feedback => _feedback;
   String? get transcript => _transcript;
   String? get message => _message ?? _voice.snapshot.message;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
@@ -19,6 +21,7 @@ enum RealLifeReplayStatus {
   recordingFollowUp,
   reconstructing,
   readyToReplay,
+  preparingPlayback,
   playing,
   awaitingResponse,
   recordingResponse,
@@ -49,7 +52,22 @@ class RealLifeReplayController extends ChangeNotifier {
         _caseClientId = (createId ?? createClientUuid)(),
         _sessionClientId = (createId ?? createClientUuid)(),
         _responseClientId = (createId ?? createClientUuid)(),
-        _strings = strings ?? lookupAppLocalizations(const Locale('de'));
+        _strings = strings ?? lookupAppLocalizations(const Locale('de')) {
+    if (recorder case final VoiceActivitySource source) {
+      _recorderActivitySubscription = source.voiceActivity.listen((level) {
+        if (_isRecordingStatus(_status)) {
+          voiceActivity.value = level.clamp(0.0, 1.0).toDouble();
+        }
+      });
+    }
+    if (playback case final VoiceActivitySource source) {
+      _playbackActivitySubscription = source.voiceActivity.listen((level) {
+        if (_status == RealLifeReplayStatus.playing) {
+          voiceActivity.value = level.clamp(0.0, 1.0).toDouble();
+        }
+      });
+    }
+  }
 
   final MicrophonePermissionGateway _permission;
   final VoiceRecorder _recorder;
@@ -73,6 +91,9 @@ class RealLifeReplayController extends ChangeNotifier {
   QualitativeFeedback? _feedback;
   String? _message;
   int _followUpCount = 0;
+  final ValueNotifier<double> voiceActivity = ValueNotifier(0);
+  StreamSubscription<double>? _recorderActivitySubscription;
+  StreamSubscription<double>? _playbackActivitySubscription;
 
   RealLifeReplayStatus get status => _status;
   RealLifeExtraction? get extraction => _extraction;
@@ -93,6 +114,8 @@ class RealLifeReplayController extends ChangeNotifier {
         RealLifeReplayStatus.reconstructing ||
         RealLifeReplayStatus.processingResponse =>
           IntelligenceOrbState.thinking,
+        RealLifeReplayStatus.preparingPlayback =>
+          IntelligenceOrbState.preparing,
         RealLifeReplayStatus.playing => IntelligenceOrbState.speaking,
         RealLifeReplayStatus.feedbackReady => IntelligenceOrbState.success,
         _ => IntelligenceOrbState.idle,
@@ -180,7 +203,7 @@ class RealLifeReplayController extends ChangeNotifier {
     final scenario = _scenario;
     final caseRecord = _case;
     if (scenario == null || caseRecord == null) return;
-    _setStatus(RealLifeReplayStatus.playing);
+    _setStatus(RealLifeReplayStatus.preparingPlayback);
     try {
       await _repository.startSession(
         caseId: caseRecord.id,
@@ -189,6 +212,7 @@ class RealLifeReplayController extends ChangeNotifier {
       for (final line in scenario.speechLines) {
         await _playback.enqueue(await _speech.synthesize(line));
       }
+      _setStatus(RealLifeReplayStatus.playing);
       await _playback.playAll();
       _setStatus(RealLifeReplayStatus.awaitingResponse);
     } catch (_) {
@@ -315,8 +339,16 @@ class RealLifeReplayController extends ChangeNotifier {
   void _setStatus(RealLifeReplayStatus status) {
     _status = status;
     _message = null;
+    if (status != RealLifeReplayStatus.playing && !_isRecordingStatus(status)) {
+      voiceActivity.value = 0;
+    }
     notifyListeners();
   }
+
+  bool _isRecordingStatus(RealLifeReplayStatus status) =>
+      status == RealLifeReplayStatus.describing ||
+      status == RealLifeReplayStatus.recordingFollowUp ||
+      status == RealLifeReplayStatus.recordingResponse;
 
   void _setError(String message) {
     _status = RealLifeReplayStatus.error;
@@ -326,8 +358,11 @@ class RealLifeReplayController extends ChangeNotifier {
 
   @override
   void dispose() {
+    unawaited(_recorderActivitySubscription?.cancel());
+    unawaited(_playbackActivitySubscription?.cancel());
     _recorder.dispose();
     _playback.dispose();
+    voiceActivity.dispose();
     super.dispose();
   }
 }

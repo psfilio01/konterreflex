@@ -73,6 +73,7 @@ class ScenarioSessionController extends ChangeNotifier {
 
   ScenarioSessionStatus get status => _status;
   VoiceTurnSnapshot get voice => _voice.snapshot;
+  VoiceTurnController get voiceController => _voice;
   String? get transcript => _transcript;
   QualitativeFeedback? get feedback => _feedback;
   String? get followUpAnswer => _followUpAnswer;

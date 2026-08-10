@@ -16,7 +16,6 @@ import 'package:konterreflex/src/features/golden_book/application/golden_book_pr
 import 'package:konterreflex/src/core/analytics/analytics_providers.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_card.dart';
-import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 import 'package:konterreflex/src/shared/widgets/optional_transcript.dart';
 import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
 
@@ -79,9 +78,9 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
                     children: [
-                      IntelligenceOrb(
+                      VoiceTurnOrb(
                         size: 156,
-                        state: _controller.voice.state.orbState,
+                        controller: _controller.voiceController,
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       Text(

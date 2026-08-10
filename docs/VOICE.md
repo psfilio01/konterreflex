@@ -9,9 +9,15 @@ The primary journey must work without typing.
 - User: microphone input.
 
 ## State machine
-`idle -> introducing -> acting -> awaiting_user -> recording -> processing -> feedback -> follow_up`
+`idle -> preparing -> introducing -> acting -> awaiting_user -> recording -> processing -> preparing -> feedback -> follow_up`
 
-The orb animation reflects state but is never required to understand the flow.
+The preparation state covers speech generation and buffering. The speaking state
+starts only when playback is ready. The orb animation reflects state and voice
+activity but is never required to understand the flow.
+
+Microphone activity uses the RMS level of the local PCM stream. Playback starts
+its visual cadence only when the device audio player starts; it does not delay
+playback to decode or analyze provider audio a second time.
 
 ## Provider boundary
 Server side speech operations use `SpeechProvider` contracts. ElevenLabs is the default TTS provider. STT is configurable. Audio files may be cached when policy and consent allow.

@@ -65,7 +65,14 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
                   constraints: const BoxConstraints(maxWidth: 600),
                   child: Column(
                     children: [
-                      IntelligenceOrb(size: 156, state: _controller.orbState),
+                      ValueListenableBuilder<double>(
+                        valueListenable: _controller.voiceActivity,
+                        builder: (context, activity, child) => IntelligenceOrb(
+                          size: 156,
+                          state: _controller.orbState,
+                          activityLevel: activity,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.xl),
                       Text(
                         _title(_controller.status),
@@ -120,6 +127,8 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
           context.l10n.realLifeReconstructingTitle,
         RealLifeReplayStatus.readyToReplay =>
           context.l10n.realLifeReplayReadyTitle,
+        RealLifeReplayStatus.preparingPlayback =>
+          context.l10n.realLifePreparingPlaybackTitle,
         RealLifeReplayStatus.playing => context.l10n.realLifePlayingTitle,
         RealLifeReplayStatus.awaitingResponse =>
           context.l10n.realLifeResponseTitle,

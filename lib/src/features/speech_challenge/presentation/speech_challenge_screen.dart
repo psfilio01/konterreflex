@@ -13,7 +13,6 @@ import 'package:konterreflex/src/features/speech_challenge/application/speech_ch
 import 'package:konterreflex/src/features/speech_challenge/application/speech_challenge_providers.dart';
 import 'package:konterreflex/src/features/speech_challenge/domain/speech_challenge.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
-import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 import 'package:konterreflex/src/shared/widgets/optional_transcript.dart';
 import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
 
@@ -116,8 +115,10 @@ class _ChallengeSessionScreenState
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
                     children: [
-                      IntelligenceOrb(
-                          size: 156, state: _controller.voice.state.orbState),
+                      VoiceTurnOrb(
+                        size: 156,
+                        controller: _controller.voiceController,
+                      ),
                       const SizedBox(height: AppSpacing.xl),
                       Text(_statusText(_controller.status),
                           style: Theme.of(context).textTheme.headlineMedium,

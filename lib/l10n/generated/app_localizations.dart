@@ -392,6 +392,12 @@ abstract class AppLocalizations {
   /// **'Bereit'**
   String get orbReady;
 
+  /// No description provided for @orbPreparing.
+  ///
+  /// In de, this message translates to:
+  /// **'Audio wird vorbereitet'**
+  String get orbPreparing;
+
   /// No description provided for @orbSpeaking.
   ///
   /// In de, this message translates to:
@@ -1207,6 +1213,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Bereit für den zweiten Versuch?'**
   String get realLifeReplayReadyTitle;
+
+  /// No description provided for @realLifePreparingPlaybackTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Szene wird vorbereitet'**
+  String get realLifePreparingPlaybackTitle;
 
   /// No description provided for @realLifePlayingTitle.
   ///
