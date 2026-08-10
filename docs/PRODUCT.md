@@ -14,7 +14,11 @@ The user tells Konterreflex what happened. The intelligence extracts context, pe
 Curated or approved scenarios cover one to one, group, work, family, friendship, dating and public situations. A neutral moderator voice introduces context, one or more actor voices perform the scene, then the user responds.
 
 ### Speech Challenge
-Short prompts without long scene introductions. The goal is spontaneous, high quality communication, not a speed score.
+Short prompts without long scene introductions. The user chooses 1 to 15
+prompts before starting. Prompts and spoken responses run continuously without
+intermediate evaluation; one consolidated qualitative result with expandable
+response details appears at the end. The goal is spontaneous, high quality
+communication, not a speed score.
 
 ### Golden Book
 Users save useful phrases, words, rhetorical patterns and personal favorites by voice or simple direct interaction.

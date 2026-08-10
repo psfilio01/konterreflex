@@ -131,6 +131,53 @@ class QualitativeFeedbackSummary extends StatelessWidget {
   }
 }
 
+class FeedbackSignalBadge extends StatelessWidget {
+  const FeedbackSignalBadge({required this.signal, super.key});
+
+  final FeedbackSignal signal;
+
+  @override
+  Widget build(BuildContext context) {
+    final presentation = _SignalPresentation(signal, context.l10n);
+    return Semantics(
+      label: presentation.label,
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: presentation.background,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                presentation.icon,
+                size: 18,
+                color: presentation.foreground,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text(
+                  presentation.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: presentation.foreground,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DimensionSignal extends StatelessWidget {
   const _DimensionSignal({
     required this.width,

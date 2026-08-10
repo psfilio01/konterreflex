@@ -9,6 +9,7 @@ Current tasks:
 - `scenario.safety_review` -> `scenario_safety_review_v1.md`
 - `response.evaluate` -> `response_evaluate_v2.md`
 - `response.evaluate_visual` -> `response_evaluate_v3.md`
+- `response.evaluate_challenge_session` -> `response_challenge_session_v1.md`
 - `real_life.extract` -> `real_life_extract_v1.md`
 - `real_life.reconstruct` -> `real_life_reconstruct_v1.md`
 - `conversation.reply` -> `conversation_reply_v1.md`

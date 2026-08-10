@@ -11,6 +11,7 @@ All app calls target a server side `ai-gateway` Edge Function. The gateway expos
 - `scenario.safety_review`
 - `response.evaluate`
 - `response.evaluate_visual`
+- `response.evaluate_challenge_session`
 - `real_life.extract`
 - `real_life.reconstruct`
 - `conversation.reply`
@@ -27,6 +28,11 @@ Use versioned JSON schemas. Store prompt version, provider and model name with g
 Visual feedback uses categorical signals rather than calculated scores. The
 legacy evaluation task remains available for older app versions; new clients use
 the separately versioned visual schema.
+
+Speech Challenge sends the completed response series to one batch evaluation
+task. It returns one contextual overall result and one ordered qualitative
+detail per response. The overall signal must not be derived by averaging or
+counting detail signals.
 
 ## Knowledge foundation
 Communication science references must be curated in a separate, reviewable knowledge layer. Do not claim scientific authority from a name alone. Store source, concept, intended use, evidence status and limitations.

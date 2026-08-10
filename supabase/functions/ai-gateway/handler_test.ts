@@ -332,6 +332,38 @@ Deno.test("rejects numeric values as visual feedback signals", async () => {
   );
 });
 
+Deno.test("accepts one consolidated Speech Challenge result", async () => {
+  const provider = new MockAiProvider(challengeSessionFeedback());
+  const response = await handlerFor(provider)(
+    request("response.evaluate_challenge_session"),
+  );
+  const body = await response.json();
+
+  assert(response.status === 200, "expected valid challenge result");
+  assert(body.data.details.length === 2, "expected ordered response details");
+  assert(
+    body.promptVersion === "response_challenge_session_v1",
+    "expected challenge prompt version",
+  );
+});
+
+Deno.test("rejects numeric Speech Challenge detail signals", async () => {
+  const result = challengeSessionFeedback();
+  const details = result.details as Array<Record<string, unknown>>;
+  details[0].signal = "9";
+  const provider = new MockAiProvider(result);
+  const response = await handlerFor(provider)(
+    request("response.evaluate_challenge_session"),
+  );
+  const body = await response.json();
+
+  assert(response.status === 502, "expected schema rejection");
+  assert(
+    body.error.code === "invalid_provider_response",
+    "expected validation error",
+  );
+});
+
 Deno.test("safety review keeps hostile training context separate from discrimination", async () => {
   const provider = new MockAiProvider({
     decision: "pass",
@@ -380,5 +412,27 @@ function visualFeedback(): Record<string, unknown> {
       naturalness: "sprechbar",
       escalation_fit: "passend",
     },
+  };
+}
+
+function challengeSessionFeedback(): Record<string, unknown> {
+  return {
+    summary: visualFeedback(),
+    details: [
+      {
+        signal: "strong",
+        headline: "Clear boundary",
+        strength: "The response is direct.",
+        improvement: "Name the next step.",
+        alternative: "I want to finish this thought first.",
+      },
+      {
+        signal: "developing",
+        headline: "Useful foundation",
+        strength: "The position is understandable.",
+        improvement: "Make the request more concrete.",
+        alternative: "Please let me finish, then I will respond.",
+      },
+    ],
   };
 }

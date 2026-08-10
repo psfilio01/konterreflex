@@ -5,6 +5,7 @@ import {
   goldenBookExtractV1,
   realLifeExtractV1,
   realLifeReconstructV1,
+  responseChallengeSessionV1,
   responseEvaluateV2,
   responseEvaluateV3,
   scenarioGenerateV2,
@@ -87,6 +88,24 @@ const feedbackDimensionSignalsSchema = strictObject({
   escalation_fit: feedbackSignalSchema,
 });
 
+const visualFeedbackSchema = strictObject({
+  overall_signal: feedbackSignalSchema,
+  dimension_signals: feedbackDimensionSignalsSchema,
+  headline: text(1),
+  explanation: text(1),
+  strengths: textList(3),
+  improvement: text(1),
+  alternatives: textList(3),
+  dimensions: strictObject({
+    posture: text(1),
+    precision: text(1),
+    frame: text(1),
+    social_effect: text(1),
+    naturalness: text(1),
+    escalation_fit: text(1),
+  }),
+});
+
 export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   "scenario.generate": {
     task: "scenario.generate",
@@ -137,22 +156,26 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
     task: "response.evaluate_visual",
     prompt: responseEvaluateV3,
     promptVersion: "response_evaluate_visual_v3",
+    outputSchema: visualFeedbackSchema,
+  },
+  "response.evaluate_challenge_session": {
+    task: "response.evaluate_challenge_session",
+    prompt: responseChallengeSessionV1,
+    promptVersion: "response_challenge_session_v1",
     outputSchema: strictObject({
-      overall_signal: feedbackSignalSchema,
-      dimension_signals: feedbackDimensionSignalsSchema,
-      headline: text(1),
-      explanation: text(1),
-      strengths: textList(3),
-      improvement: text(1),
-      alternatives: textList(3),
-      dimensions: strictObject({
-        posture: text(1),
-        precision: text(1),
-        frame: text(1),
-        social_effect: text(1),
-        naturalness: text(1),
-        escalation_fit: text(1),
-      }),
+      summary: visualFeedbackSchema,
+      details: {
+        type: "array",
+        minItems: 1,
+        maxItems: 15,
+        items: strictObject({
+          signal: feedbackSignalSchema,
+          headline: text(1),
+          strength: text(1),
+          improvement: text(1),
+          alternative: text(1),
+        }),
+      },
     }),
   },
   "real_life.extract": {
