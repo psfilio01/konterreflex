@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
@@ -32,12 +33,24 @@ abstract final class AppRoute {
   static const privacy = 'privacy';
 }
 
+/// Notifies [GoRouter] when auth/profile state changes without recreating it.
+class _RouterAuthRefresh extends ChangeNotifier {
+  void notify() => notifyListeners();
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authUser = ref.watch(authUserProvider);
-  final profile = ref.watch(profileProvider);
+  final refresh = _RouterAuthRefresh();
+  ref.listen(authUserProvider, (_, __) => refresh.notify());
+  ref.listen(profileProvider, (_, __) => refresh.notify());
+  ref.onDispose(refresh.dispose);
+
   final router = GoRouter(
     initialLocation: '/loading',
+    refreshListenable: refresh,
     redirect: (context, state) {
+      // Read (don't watch) so this GoRouter instance stays stable.
+      final authUser = ref.read(authUserProvider);
+      final profile = ref.read(profileProvider);
       final isAuthLoading = authUser.isLoading;
       final user = authUser.asData?.value;
       final isProfileLoading = user != null && profile.isLoading;

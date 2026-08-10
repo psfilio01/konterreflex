@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/features/auth/data/auth_repository.dart';
 import 'package:konterreflex/src/features/auth/domain/user_profile.dart';
@@ -20,7 +22,12 @@ final authUserProvider = StreamProvider<User?>((ref) async* {
 final profileProvider = FutureProvider<UserProfile?>((ref) async {
   final user = ref.watch(authUserProvider).asData?.value;
   if (user == null) return null;
-  return ref.watch(authRepositoryProvider).fetchProfile(user.id);
+  return ref.watch(authRepositoryProvider).fetchProfile(user.id).timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => throw TimeoutException(
+          'Profil konnte nicht geladen werden.',
+        ),
+      );
 });
 
 final authActionControllerProvider =
