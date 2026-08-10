@@ -589,7 +589,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechChallengeIntro =>
-      'Short prompts, spoken responses, and direct qualitative feedback.';
+      'Short prompts in one flow. Your consolidated qualitative result follows at the end.';
 
   @override
   String get challengeSetsLoadError =>
@@ -614,17 +614,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speakResponse => 'Speak your response';
 
   @override
-  String get shortReflection => 'Brief reflection …';
+  String get challengeTransitioning =>
+      'Response saved · the next prompt is coming';
+
+  @override
+  String get challengeEvaluating => 'Bringing your responses together …';
 
   @override
   String get setComplete => 'Set complete';
 
   @override
   String get brieflyInterrupted => 'Briefly interrupted';
-
-  @override
-  String get challengeCompleteWithoutFeedback =>
-      'Set complete. Your responses were saved; AI feedback was temporarily unavailable.';
 
   @override
   String get challengeContinueError =>
@@ -634,8 +634,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get promptPlaybackError => 'The prompt could not be played.';
 
   @override
-  String get feedbackCapacityNotice =>
-      'Your response was saved. AI feedback is currently at capacity. We will continue with the next prompt.';
+  String get challengeLengthTitle => 'How many prompts would you like?';
+
+  @override
+  String get challengeLengthBody =>
+      'Choose your session length. Feedback will not interrupt the flow.';
+
+  @override
+  String get challengeLengthCustom => 'Custom amount';
+
+  @override
+  String challengeLengthRange(int max) {
+    return 'Choose between 1 and $max.';
+  }
+
+  @override
+  String challengeAvailableCount(int count) {
+    return '$count different prompts available';
+  }
+
+  @override
+  String startChallengeWithCount(int count) {
+    return 'Start challenge with $count prompts';
+  }
+
+  @override
+  String challengeProgress(int current, int total) {
+    return 'Prompt $current of $total';
+  }
+
+  @override
+  String get challengeResultTitle => 'Your result';
+
+  @override
+  String challengeResultBody(int count) {
+    return 'Consolidated feedback from $count responses.';
+  }
+
+  @override
+  String challengePartialResultBody(int completed, int target) {
+    return 'You completed $completed of $target prompts. Here is the consolidated result for your responses.';
+  }
+
+  @override
+  String get challengeDetailsTitle => 'Response details';
+
+  @override
+  String challengePromptNumber(int number) {
+    return 'Prompt $number';
+  }
+
+  @override
+  String get challengeYourAnswer => 'Your response';
+
+  @override
+  String get challengeDetailAlternative => 'One natural alternative';
+
+  @override
+  String get newChallenge => 'New challenge';
+
+  @override
+  String get retryChallengeEvaluation => 'Retry result';
+
+  @override
+  String get challengeEvaluationCapacityError =>
+      'Your responses are saved. AI evaluation is currently at capacity and can be retried.';
+
+  @override
+  String get challengeEvaluationError =>
+      'Your responses are saved, but the consolidated result could not be created yet.';
 
   @override
   String get realLifeScenarioTitle => 'Your real-life situation';

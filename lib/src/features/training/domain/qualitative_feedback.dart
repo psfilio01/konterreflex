@@ -187,6 +187,17 @@ class QualitativeFeedback {
   final String model;
   final String promptVersion;
 
+  Map<String, dynamic> toJson() => {
+        'overall_signal': overallSignal.wireName,
+        'dimension_signals': dimensionSignals.toJson(),
+        'headline': headline,
+        'explanation': explanation,
+        'strengths': strengths,
+        'improvement': improvement,
+        'alternatives': alternatives,
+        'dimensions': dimensions.toJson(),
+      };
+
   String get spokenSummary => spokenSummaryFor(
         lookupAppLocalizations(const Locale('de')),
       );

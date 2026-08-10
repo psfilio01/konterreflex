@@ -605,7 +605,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechChallengeIntro =>
-      'Kurze Impulse, gesprochene Antworten und direktes qualitatives Feedback.';
+      'Kurze Impulse im Flow. Deine gemeinsame qualitative Auswertung folgt am Ende.';
 
   @override
   String get challengeSetsLoadError =>
@@ -630,17 +630,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get speakResponse => 'Sprich deine Antwort';
 
   @override
-  String get shortReflection => 'Kurze Reflexion …';
+  String get challengeTransitioning =>
+      'Antwort gespeichert · gleich geht es weiter';
+
+  @override
+  String get challengeEvaluating => 'Deine Antworten werden zusammengeführt …';
 
   @override
   String get setComplete => 'Set abgeschlossen';
 
   @override
   String get brieflyInterrupted => 'Kurz unterbrochen';
-
-  @override
-  String get challengeCompleteWithoutFeedback =>
-      'Set abgeschlossen. Deine Antworten wurden gespeichert; das KI-Feedback war vorübergehend nicht verfügbar.';
 
   @override
   String get challengeContinueError =>
@@ -651,8 +651,75 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Impuls konnte nicht abgespielt werden.';
 
   @override
-  String get feedbackCapacityNotice =>
-      'Deine Antwort wurde gespeichert. Das KI-Feedback ist gerade ausgelastet. Wir machen mit dem nächsten Impuls weiter.';
+  String get challengeLengthTitle => 'Wie viele Impulse möchtest du?';
+
+  @override
+  String get challengeLengthBody =>
+      'Wähle die Länge deiner Session. Während des Durchlaufs gibt es keine Unterbrechung durch Feedback.';
+
+  @override
+  String get challengeLengthCustom => 'Eigene Anzahl';
+
+  @override
+  String challengeLengthRange(int max) {
+    return 'Bitte wähle 1 bis $max.';
+  }
+
+  @override
+  String challengeAvailableCount(int count) {
+    return '$count unterschiedliche Impulse verfügbar';
+  }
+
+  @override
+  String startChallengeWithCount(int count) {
+    return 'Challenge mit $count Impulsen starten';
+  }
+
+  @override
+  String challengeProgress(int current, int total) {
+    return 'Impuls $current von $total';
+  }
+
+  @override
+  String get challengeResultTitle => 'Deine Auswertung';
+
+  @override
+  String challengeResultBody(int count) {
+    return 'Gemeinsames Feedback aus $count Antworten.';
+  }
+
+  @override
+  String challengePartialResultBody(int completed, int target) {
+    return 'Du hast $completed von $target Impulsen abgeschlossen. Hier ist die gemeinsame Auswertung deiner Antworten.';
+  }
+
+  @override
+  String get challengeDetailsTitle => 'Details zu deinen Antworten';
+
+  @override
+  String challengePromptNumber(int number) {
+    return 'Impuls $number';
+  }
+
+  @override
+  String get challengeYourAnswer => 'Deine Antwort';
+
+  @override
+  String get challengeDetailAlternative => 'Eine natürliche Alternative';
+
+  @override
+  String get newChallenge => 'Neue Challenge';
+
+  @override
+  String get retryChallengeEvaluation => 'Auswertung erneut versuchen';
+
+  @override
+  String get challengeEvaluationCapacityError =>
+      'Deine Antworten sind gespeichert. Die KI-Auswertung ist gerade ausgelastet und kann erneut versucht werden.';
+
+  @override
+  String get challengeEvaluationError =>
+      'Deine Antworten sind gespeichert, aber die gemeinsame Auswertung konnte noch nicht erstellt werden.';
 
   @override
   String get realLifeScenarioTitle => 'Deine echte Situation';

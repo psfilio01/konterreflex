@@ -1139,7 +1139,7 @@ abstract class AppLocalizations {
   /// No description provided for @speechChallengeIntro.
   ///
   /// In de, this message translates to:
-  /// **'Kurze Impulse, gesprochene Antworten und direktes qualitatives Feedback.'**
+  /// **'Kurze Impulse im Flow. Deine gemeinsame qualitative Auswertung folgt am Ende.'**
   String get speechChallengeIntro;
 
   /// No description provided for @challengeSetsLoadError.
@@ -1184,11 +1184,17 @@ abstract class AppLocalizations {
   /// **'Sprich deine Antwort'**
   String get speakResponse;
 
-  /// No description provided for @shortReflection.
+  /// No description provided for @challengeTransitioning.
   ///
   /// In de, this message translates to:
-  /// **'Kurze Reflexion …'**
-  String get shortReflection;
+  /// **'Antwort gespeichert · gleich geht es weiter'**
+  String get challengeTransitioning;
+
+  /// No description provided for @challengeEvaluating.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Antworten werden zusammengeführt …'**
+  String get challengeEvaluating;
 
   /// No description provided for @setComplete.
   ///
@@ -1202,12 +1208,6 @@ abstract class AppLocalizations {
   /// **'Kurz unterbrochen'**
   String get brieflyInterrupted;
 
-  /// No description provided for @challengeCompleteWithoutFeedback.
-  ///
-  /// In de, this message translates to:
-  /// **'Set abgeschlossen. Deine Antworten wurden gespeichert; das KI-Feedback war vorübergehend nicht verfügbar.'**
-  String get challengeCompleteWithoutFeedback;
-
   /// No description provided for @challengeContinueError.
   ///
   /// In de, this message translates to:
@@ -1220,11 +1220,113 @@ abstract class AppLocalizations {
   /// **'Der Impuls konnte nicht abgespielt werden.'**
   String get promptPlaybackError;
 
-  /// No description provided for @feedbackCapacityNotice.
+  /// No description provided for @challengeLengthTitle.
   ///
   /// In de, this message translates to:
-  /// **'Deine Antwort wurde gespeichert. Das KI-Feedback ist gerade ausgelastet. Wir machen mit dem nächsten Impuls weiter.'**
-  String get feedbackCapacityNotice;
+  /// **'Wie viele Impulse möchtest du?'**
+  String get challengeLengthTitle;
+
+  /// No description provided for @challengeLengthBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle die Länge deiner Session. Während des Durchlaufs gibt es keine Unterbrechung durch Feedback.'**
+  String get challengeLengthBody;
+
+  /// No description provided for @challengeLengthCustom.
+  ///
+  /// In de, this message translates to:
+  /// **'Eigene Anzahl'**
+  String get challengeLengthCustom;
+
+  /// No description provided for @challengeLengthRange.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte wähle 1 bis {max}.'**
+  String challengeLengthRange(int max);
+
+  /// No description provided for @challengeAvailableCount.
+  ///
+  /// In de, this message translates to:
+  /// **'{count} unterschiedliche Impulse verfügbar'**
+  String challengeAvailableCount(int count);
+
+  /// No description provided for @startChallengeWithCount.
+  ///
+  /// In de, this message translates to:
+  /// **'Challenge mit {count} Impulsen starten'**
+  String startChallengeWithCount(int count);
+
+  /// No description provided for @challengeProgress.
+  ///
+  /// In de, this message translates to:
+  /// **'Impuls {current} von {total}'**
+  String challengeProgress(int current, int total);
+
+  /// No description provided for @challengeResultTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Auswertung'**
+  String get challengeResultTitle;
+
+  /// No description provided for @challengeResultBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Gemeinsames Feedback aus {count} Antworten.'**
+  String challengeResultBody(int count);
+
+  /// No description provided for @challengePartialResultBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Du hast {completed} von {target} Impulsen abgeschlossen. Hier ist die gemeinsame Auswertung deiner Antworten.'**
+  String challengePartialResultBody(int completed, int target);
+
+  /// No description provided for @challengeDetailsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Details zu deinen Antworten'**
+  String get challengeDetailsTitle;
+
+  /// No description provided for @challengePromptNumber.
+  ///
+  /// In de, this message translates to:
+  /// **'Impuls {number}'**
+  String challengePromptNumber(int number);
+
+  /// No description provided for @challengeYourAnswer.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Antwort'**
+  String get challengeYourAnswer;
+
+  /// No description provided for @challengeDetailAlternative.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine natürliche Alternative'**
+  String get challengeDetailAlternative;
+
+  /// No description provided for @newChallenge.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Challenge'**
+  String get newChallenge;
+
+  /// No description provided for @retryChallengeEvaluation.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswertung erneut versuchen'**
+  String get retryChallengeEvaluation;
+
+  /// No description provided for @challengeEvaluationCapacityError.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Antworten sind gespeichert. Die KI-Auswertung ist gerade ausgelastet und kann erneut versucht werden.'**
+  String get challengeEvaluationCapacityError;
+
+  /// No description provided for @challengeEvaluationError.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Antworten sind gespeichert, aber die gemeinsame Auswertung konnte noch nicht erstellt werden.'**
+  String get challengeEvaluationError;
 
   /// No description provided for @realLifeScenarioTitle.
   ///
