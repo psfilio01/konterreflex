@@ -12,6 +12,13 @@ import 'package:konterreflex/src/features/training/domain/qualitative_feedback.d
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 
 void main() {
+  test('private replay scenes never opt into the shared audio cache', () {
+    expect(
+      scenario.speechLines.every((line) => line.sharedReference == null),
+      isTrue,
+    );
+  });
+
   test('voice-only real-life replay reaches qualitative feedback', () async {
     final ids = List.generate(
       8,

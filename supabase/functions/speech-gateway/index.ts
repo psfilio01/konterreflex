@@ -2,15 +2,23 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { ElevenLabsSpeechProvider } from "../_shared/speech/elevenlabs_provider.ts";
 import { SpeechProviderRegistry } from "../_shared/speech/provider_registry.ts";
 import { createSpeechGatewayHandler } from "./handler.ts";
+import {
+  SupabaseSharedSpeechCatalog,
+  SupabaseSpeechAudioCache,
+} from "./supabase_shared_audio_cache.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
   Deno.env.get("SUPABASE_ANON_KEY");
-if (!supabaseUrl || !supabaseKey) {
+const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+if (!supabaseUrl || !supabaseKey || !serviceRoleKey) {
   throw new Error("Missing Supabase server configuration.");
 }
 
 const authClient = createClient(supabaseUrl, supabaseKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
+const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
@@ -49,6 +57,8 @@ Deno.serve(createSpeechGatewayHandler({
   providers: registry,
   ttsProviderId: Deno.env.get("TTS_PROVIDER") ?? "elevenlabs",
   sttProviderId: Deno.env.get("STT_PROVIDER") ?? "elevenlabs",
+  sharedSpeechCatalog: new SupabaseSharedSpeechCatalog(serviceClient),
+  speechAudioCache: new SupabaseSpeechAudioCache(serviceClient),
   async authenticate(request) {
     const authorization = request.headers.get("Authorization");
     if (!authorization?.startsWith("Bearer ")) return false;

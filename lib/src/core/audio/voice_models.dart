@@ -2,16 +2,35 @@ import 'dart:typed_data';
 
 enum VoiceRole { moderator, actor, intelligence }
 
+enum SharedSpeechResourceKind {
+  scenarioIntro('scenario_intro'),
+  scenarioTurn('scenario_turn'),
+  challengePrompt('challenge_prompt');
+
+  const SharedSpeechResourceKind(this.wireName);
+
+  final String wireName;
+}
+
+class SharedSpeechReference {
+  const SharedSpeechReference({required this.kind, required this.id});
+
+  final SharedSpeechResourceKind kind;
+  final String id;
+}
+
 class SpeechLine {
   const SpeechLine({
     required this.text,
     required this.role,
     this.voiceId,
+    this.sharedReference,
   });
 
   final String text;
   final VoiceRole role;
   final String? voiceId;
+  final SharedSpeechReference? sharedReference;
 }
 
 class RecordedAudio {

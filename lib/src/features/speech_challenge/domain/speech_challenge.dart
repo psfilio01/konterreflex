@@ -50,8 +50,14 @@ class ChallengePrompt {
   final String context;
   final int sortOrder;
 
-  SpeechLine get speechLine =>
-      SpeechLine(text: remark, role: VoiceRole.moderator);
+  SpeechLine get speechLine => SpeechLine(
+        text: remark,
+        role: VoiceRole.moderator,
+        sharedReference: SharedSpeechReference(
+          kind: SharedSpeechResourceKind.challengePrompt,
+          id: id,
+        ),
+      );
 
   TrainingScenario asScenario(String theme) => TrainingScenario(
         id: id,

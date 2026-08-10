@@ -20,7 +20,11 @@ its visual cadence only when the device audio player starts; it does not delay
 playback to decode or analyze provider audio a second time.
 
 ## Provider boundary
-Server side speech operations use `SpeechProvider` contracts. ElevenLabs is the default TTS provider. STT is configurable. Audio files may be cached when policy and consent allow.
+Server side speech operations use `SpeechProvider` contracts. ElevenLabs is the
+default TTS provider. STT is configurable. Approved scenario and Speech
+Challenge lines use the private, provider-aware shared cache described in
+`SCENE_AUDIO_CACHE.md`. Dynamic feedback and private Real Life Replay content
+are never placed in that shared cache.
 
 ## Accessibility
 Always provide optional captions/transcripts and visible controls even though text input is not required.

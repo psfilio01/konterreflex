@@ -1,11 +1,27 @@
 import { SpeechProviderRegistry } from "../_shared/speech/provider_registry.ts";
-import { VoiceRole, voiceRoles } from "../_shared/speech/contracts.ts";
+import { SpeechProviderError } from "../_shared/speech/provider.ts";
+import {
+  SynthesizeRequest,
+  SynthesizeResult,
+  VoiceRole,
+  voiceRoles,
+} from "../_shared/speech/contracts.ts";
+import {
+  createSharedSpeechCacheKey,
+  SharedSpeechCatalog,
+  SharedSpeechReference,
+  sharedSpeechResourceKinds,
+  SpeechAudioCache,
+  SpeechAudioCacheStatus,
+} from "../_shared/speech/shared_audio_cache.ts";
 
 export interface SpeechGatewayDependencies {
   authenticate(request: Request): Promise<boolean>;
   providers: SpeechProviderRegistry;
   ttsProviderId: string;
   sttProviderId: string;
+  sharedSpeechCatalog?: SharedSpeechCatalog;
+  speechAudioCache?: SpeechAudioCache;
   timeoutMs?: number;
   createRequestId?: () => string;
 }
@@ -79,26 +95,108 @@ export function createSpeechGatewayHandler(
             "Ungültige Sprachausgabe.",
           );
         }
+        const languageCode = body.languageCode === "en" ? "en" : "de";
+        const sharedReference = parseSharedReference(body.sharedReference);
+        if (body.sharedReference != null && sharedReference == null) {
+          throw new GatewayError(
+            "invalid_request",
+            400,
+            "Ungültige Sprachausgabe.",
+          );
+        }
+        let synthesisRequest: SynthesizeRequest = {
+          text,
+          role,
+          voiceId: typeof body.voiceId === "string" ? body.voiceId : undefined,
+          languageCode,
+        };
+        if (sharedReference != null) {
+          if (
+            dependencies.sharedSpeechCatalog == null ||
+            dependencies.speechAudioCache == null
+          ) {
+            throw new GatewayError(
+              "cache_unavailable",
+              503,
+              "Die Sprachausgabe ist gerade nicht erreichbar.",
+            );
+          }
+          const canonical = await dependencies.sharedSpeechCatalog.resolve(
+            sharedReference,
+            languageCode,
+          );
+          if (canonical == null) {
+            throw new GatewayError(
+              "invalid_request",
+              400,
+              "Diese Sprachausgabe ist nicht freigegeben.",
+            );
+          }
+          if (
+            canonical.text.trim().length === 0 ||
+            canonical.text.length > 1_500
+          ) {
+            throw new GatewayError(
+              "invalid_request",
+              400,
+              "Ungültige Sprachausgabe.",
+            );
+          }
+          synthesisRequest = canonical;
+        }
         const provider = dependencies.providers.textToSpeech(
           dependencies.ttsProviderId,
         );
-        const result = await withTimeout(
-          (signal) =>
-            provider.synthesize({
-              text,
-              role,
-              voiceId: typeof body.voiceId === "string"
-                ? body.voiceId
-                : undefined,
-              languageCode: body.languageCode === "en" ? "en" : "de",
-            }, signal),
-          timeoutMs,
-        );
+        const create = () =>
+          withTimeout(
+            (signal) => provider.synthesize(synthesisRequest, signal),
+            timeoutMs,
+          );
+        let cacheStatus: SpeechAudioCacheStatus = "bypass";
+        let result: SynthesizeResult;
+        if (sharedReference != null && dependencies.speechAudioCache != null) {
+          const profile = provider.synthesisProfile(synthesisRequest);
+          const cacheKey = await createSharedSpeechCacheKey(
+            synthesisRequest,
+            profile,
+          );
+          try {
+            const cached = await dependencies.speechAudioCache.getOrCreate(
+              cacheKey,
+              create,
+            );
+            result = cached.result;
+            cacheStatus = cached.status;
+          } catch (error) {
+            if (
+              error instanceof GatewayError ||
+              error instanceof SpeechProviderError
+            ) throw error;
+            console.warn(JSON.stringify({
+              event: "shared_speech_cache_bypassed",
+              requestId,
+              cacheKey: cacheKey.slice(0, 12),
+            }));
+            result = await create();
+          }
+        } else {
+          result = await create();
+        }
+        if (sharedReference != null) {
+          console.info(JSON.stringify({
+            event: "shared_speech_cache_result",
+            requestId,
+            cacheStatus,
+            provider: result.provider,
+            model: result.model,
+          }));
+        }
         return json({
           audioBase64: encodeBase64(result.audio),
           mimeType: result.mimeType,
           provider: result.provider,
           model: result.model,
+          cacheStatus,
           schemaVersion: "1",
           requestId,
         }, 200);
@@ -187,6 +285,23 @@ function isVoiceRole(value: unknown): value is VoiceRole {
 
 function isLanguageCode(value: unknown): value is "de" | "en" {
   return value === "de" || value === "en";
+}
+
+function parseSharedReference(value: unknown): SharedSpeechReference | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.kind !== "string" ||
+    !sharedSpeechResourceKinds.some((kind) => kind === value.kind) ||
+    typeof value.id !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      .test(value.id)
+  ) {
+    return null;
+  }
+  return {
+    kind: value.kind as SharedSpeechReference["kind"],
+    id: value.id,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

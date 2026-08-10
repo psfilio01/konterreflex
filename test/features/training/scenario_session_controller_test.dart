@@ -72,6 +72,44 @@ void main() {
       'voice-a',
       'voice-b',
     ]);
+    expect(
+      testScenario.speechLines.first.sharedReference?.kind,
+      SharedSpeechResourceKind.scenarioIntro,
+    );
+  });
+
+  test('database scenario turns carry stable shared audio references', () {
+    final scenario = TrainingScenario.fromJson({
+      'id': '10000000-0000-0000-0000-000000000001',
+      'title': 'Szene',
+      'category': 'Arbeit',
+      'moderator_intro': 'Einleitung.',
+      'scenario_characters': [
+        {
+          'id': '20000000-0000-0000-0000-000000000001',
+          'name': 'Alex',
+          'sort_order': 0,
+          'voice_id': 'actor_voice',
+        }
+      ],
+      'scenario_turns': [
+        {
+          'id': '30000000-0000-0000-0000-000000000001',
+          'character_id': '20000000-0000-0000-0000-000000000001',
+          'body': 'Einwand.',
+          'sort_order': 0,
+        }
+      ],
+    });
+
+    expect(
+      scenario.speechLines[1].sharedReference?.kind,
+      SharedSpeechResourceKind.scenarioTurn,
+    );
+    expect(
+      scenario.speechLines[1].sharedReference?.id,
+      '30000000-0000-0000-0000-000000000001',
+    );
   });
 
   test('scene playback failure offers a retry instead of recording', () async {
@@ -109,6 +147,7 @@ const testScenario = TrainingScenario(
     ScenarioTurn(
         characterId: 'b', body: 'Der Punkt ist doch klar.', sortOrder: 1),
   ],
+  sharedAudioEligible: true,
 );
 
 class _MemoryScenarioRepository implements ScenarioRepository {

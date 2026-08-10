@@ -51,6 +51,14 @@ void main() {
     expect(serializedShape, isNot(contains('reaction')));
   });
 
+  test('challenge prompts use approved shared audio references', () {
+    expect(
+      challengeSet.prompts.first.speechLine.sharedReference?.kind,
+      SharedSpeechResourceKind.challengePrompt,
+    );
+    expect(challengeSet.prompts.first.speechLine.sharedReference?.id, 'p1');
+  });
+
   test('exhausted AI quota does not abort the hands-free challenge', () async {
     final repository = _Repository();
     final speech = _Speech();

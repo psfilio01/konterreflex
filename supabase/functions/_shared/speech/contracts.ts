@@ -15,6 +15,14 @@ export interface SynthesizeResult {
   model: string;
 }
 
+export interface SynthesisProfile {
+  provider: string;
+  model: string;
+  voice: string;
+  outputFormat: string;
+  revision: string;
+}
+
 export interface TranscribeRequest {
   audio: Uint8Array;
   mimeType: string;

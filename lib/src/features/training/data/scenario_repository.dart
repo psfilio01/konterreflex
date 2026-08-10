@@ -30,7 +30,7 @@ class SupabaseScenarioRepository implements ScenarioRepository {
     category,
     moderator_intro,
     scenario_characters(id,name,description,voice_id,sort_order),
-    scenario_turns(character_id,body,stage_direction,sort_order)
+    scenario_turns(id,character_id,body,stage_direction,sort_order)
   ''';
 
   String get _userId {
