@@ -55,9 +55,14 @@ export class GeminiProvider implements AiProvider {
     });
 
     if (!response.ok) {
+      const reason = await readProviderReason(response);
       throw new ProviderError(
         "request_failed",
         `Gemini request failed with status ${response.status}`,
+        {
+          httpStatus: response.status,
+          ...(reason == null ? {} : { reason }),
+        },
       );
     }
 
@@ -84,6 +89,19 @@ export class GeminiProvider implements AiProvider {
         "Gemini returned malformed JSON",
       );
     }
+  }
+}
+
+async function readProviderReason(response: Response): Promise<string | null> {
+  try {
+    const body: unknown = await response.json();
+    if (!isRecord(body) || !isRecord(body.error)) return null;
+    const reason = body.error.status;
+    return typeof reason === "string" && /^[A-Z][A-Z_]{0,63}$/.test(reason)
+      ? reason
+      : null;
+  } catch {
+    return null;
   }
 }
 

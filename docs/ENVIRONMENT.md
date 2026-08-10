@@ -54,6 +54,11 @@ supabase secrets set --env-file supabase/.env.production
 The mobile client never receives these values. Rotate a leaked key immediately,
 then redeploy the affected Functions.
 
+The Google project behind `GEMINI_API_KEY` must have available Gemini API
+quota. The gateway maps exhausted quota to a temporary capacity error. Speech
+Challenges keep the saved answers and continue without inventing qualitative
+feedback; normal feedback resumes automatically when quota is available again.
+
 ## Environments and checks
 
 Use separate Supabase and Stripe resources for development, staging and
