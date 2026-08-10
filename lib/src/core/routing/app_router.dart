@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
-import 'package:konterreflex/src/features/auth/presentation/auth_loading_screen.dart';
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
 import 'package:konterreflex/src/features/home/home_screen.dart';
 import 'package:konterreflex/src/features/history/presentation/history_screen.dart';
@@ -19,7 +19,6 @@ import 'package:konterreflex/src/features/training/presentation/training_screen.
 
 abstract final class AppRoute {
   static const home = 'home';
-  static const loading = 'loading';
   static const signIn = 'sign-in';
   static const onboarding = 'onboarding';
   static const settings = 'settings';
@@ -45,41 +44,52 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   final router = GoRouter(
-    initialLocation: '/loading',
+    initialLocation: '/sign-in',
     refreshListenable: refresh,
     redirect: (context, state) {
-      // Read (don't watch) so this GoRouter instance stays stable.
       final authUser = ref.read(authUserProvider);
       final profile = ref.read(profileProvider);
-      final isAuthLoading = authUser.isLoading;
-      final user = authUser.asData?.value;
-      final isProfileLoading = user != null && profile.isLoading;
       final location = state.matchedLocation;
 
-      if (isAuthLoading || isProfileLoading) {
-        return location == '/loading' ? null : '/loading';
+      // Never block the UI on a blank loading route while auth resolves.
+      if (authUser.isLoading) {
+        return location == '/sign-in' ? null : '/sign-in';
       }
+
+      final user = authUser.asData?.value ?? authUser.valueOrNull;
       if (user == null) {
         return location == '/sign-in' ? null : '/sign-in';
+      }
+
+      if (profile.isLoading) {
+        return null;
       }
 
       final hasProfile = profile.asData?.value?.hasCompletedOnboarding ?? false;
       if (!hasProfile) {
         return location == '/onboarding' ? null : '/onboarding';
       }
-      if (location == '/loading' ||
-          location == '/sign-in' ||
-          location == '/onboarding') {
+      if (location == '/sign-in' || location == '/onboarding') {
         return '/';
       }
       return null;
     },
-    routes: [
-      GoRoute(
-        path: '/loading',
-        name: AppRoute.loading,
-        builder: (context, state) => const AuthLoadingScreen(),
+    errorBuilder: (context, state) => Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Text(
+              'Die Ansicht konnte nicht geladen werden.\n${state.error}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.foreground, fontSize: 16),
+            ),
+          ),
+        ),
       ),
+    ),
+    routes: [
       GoRoute(
         path: '/sign-in',
         name: AppRoute.signIn,

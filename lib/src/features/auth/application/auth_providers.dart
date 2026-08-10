@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/features/auth/data/auth_repository.dart';
 import 'package:konterreflex/src/features/auth/domain/user_profile.dart';
@@ -15,19 +16,30 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 final authUserProvider = StreamProvider<User?>((ref) async* {
   final repository = ref.watch(authRepositoryProvider);
-  yield repository.currentUser;
-  yield* repository.userChanges;
+  try {
+    yield repository.currentUser;
+    yield* repository.userChanges;
+  } catch (error, stackTrace) {
+    debugPrint('authUserProvider failed: $error\n$stackTrace');
+    yield null;
+  }
 });
 
 final profileProvider = FutureProvider<UserProfile?>((ref) async {
-  final user = ref.watch(authUserProvider).asData?.value;
+  final authState = ref.watch(authUserProvider);
+  if (authState.isLoading) return null;
+  final user = authState.asData?.value;
   if (user == null) return null;
-  return ref.watch(authRepositoryProvider).fetchProfile(user.id).timeout(
-        const Duration(seconds: 12),
-        onTimeout: () => throw TimeoutException(
-          'Profil konnte nicht geladen werden.',
-        ),
-      );
+  try {
+    return await ref.watch(authRepositoryProvider).fetchProfile(user.id).timeout(
+          const Duration(seconds: 8),
+        );
+  } on TimeoutException {
+    return null;
+  } catch (error, stackTrace) {
+    debugPrint('profileProvider failed: $error\n$stackTrace');
+    return null;
+  }
 });
 
 final authActionControllerProvider =
@@ -39,8 +51,26 @@ class AuthActionController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<void> sendSignInLink(String email) {
-    return _run(() => ref.read(authRepositoryProvider).sendSignInLink(email));
+  Future<void> sendSignInOtp(String email) {
+    return _run(() => ref.read(authRepositoryProvider).sendSignInOtp(email));
+  }
+
+  Future<void> verifySignInOtp({
+    required String email,
+    required String token,
+  }) {
+    return _run(
+      () => ref.read(authRepositoryProvider).verifySignInOtp(
+            email: email,
+            token: token,
+          ),
+    );
+  }
+
+  Future<void> completeSignInFromEmailLink(String link) {
+    return _run(
+      () => ref.read(authRepositoryProvider).completeSignInFromEmailLink(link),
+    );
   }
 
   Future<void> completeOnboarding(String displayName) async {

@@ -27,6 +27,19 @@ flutter build web --release \
 Values passed to a web build are public by definition. CI uses non-secret dummy
 values because compilation must not depend on a live backend.
 
+For mobile sign-in on iPhone, do **not** tap the email link (Mail/security
+tools often open it first and burn the one-time token). Instead:
+
+1. Request a link in the app.
+2. In Mail, long-press the link → Copy.
+3. Paste it into the app and confirm.
+
+`konterreflex://login-callback` must remain listed under Supabase Dashboard →
+Authentication → URL Configuration → Additional Redirect URLs.
+
+Optional later: configure custom SMTP and switch the Magic Link template to
+`{{ .Token }}` (see `supabase/templates/`) for numeric OTP entry.
+
 ## Edge Function values
 
 `supabase/.env.example` is the complete local template. Supabase provides
