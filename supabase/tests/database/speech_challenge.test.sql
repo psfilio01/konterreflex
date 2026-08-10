@@ -20,14 +20,14 @@ select set_config('request.jwt.claim.sub', '66666666-6666-4666-8666-666666666666
 
 select is(
   (select count(*) from public.speech_challenge_sets),
-  2::bigint,
-  'regular users see only active themed challenge sets'
+  4::bigint,
+  'regular users see active German and English challenge sets'
 );
 
 select is(
   (select count(*) from public.speech_challenge_prompts),
-  4::bigint,
-  'prompts belonging to active sets are readable'
+  8::bigint,
+  'prompts belonging to active German and English sets are readable'
 );
 
 select * from finish();
