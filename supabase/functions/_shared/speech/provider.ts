@@ -1,4 +1,5 @@
 import {
+  SynthesisProfile,
   SynthesizeRequest,
   SynthesizeResult,
   TranscribeRequest,
@@ -7,6 +8,7 @@ import {
 
 export interface TextToSpeechProvider {
   readonly id: string;
+  synthesisProfile(request: SynthesizeRequest): SynthesisProfile;
   synthesize(
     request: SynthesizeRequest,
     signal: AbortSignal,

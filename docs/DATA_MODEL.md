@@ -18,7 +18,11 @@ Core tables:
 - `prompt_versions`
 - `communication_knowledge`
 - `scenario_safety_reviews`
+- `shared_speech_audio_cache` (server-only metadata; audio lives in private Storage)
 
 Generated scenarios default to `draft`. Only admins may set them to `active`.
 
 Sensitive user recordings should be optional and deletable. Prefer derived transcript + metadata when long term raw audio storage is unnecessary.
+
+The shared speech cache contains only approved reusable product content. It does
+not retain recordings, transcripts, feedback or Real Life Replay text.

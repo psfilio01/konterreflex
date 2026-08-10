@@ -25,6 +25,11 @@ class SupabaseSpeechGateway implements SpeechGateway {
       'role': line.role.name,
       'languageCode': language.code,
       if (line.voiceId != null) 'voiceId': line.voiceId,
+      if (line.sharedReference case final SharedSpeechReference reference)
+        'sharedReference': {
+          'kind': reference.kind.wireName,
+          'id': reference.id,
+        },
     });
     final data = _responseMap(response);
     final audioBase64 = data['audioBase64'];

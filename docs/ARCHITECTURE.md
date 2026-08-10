@@ -10,6 +10,7 @@ Supabase Auth / Postgres / Storage / Edge Functions
         |
         +--> AI gateway --> Gemini default / OpenAI / Claude / compatible providers
         +--> Speech gateway --> ElevenLabs default / alternate providers
+        |       +--> private shared scene audio cache
         +--> Billing gateway --> Stripe + mobile store adapters
 ```
 
@@ -22,6 +23,8 @@ Supabase Auth / Postgres / Storage / Edge Functions
 5. User content is protected by RLS and ownership checks.
 6. Scenario generation is draft first. Admin approval is required before a generated scenario becomes globally active.
 7. Paid access is checked against server side entitlements.
+8. Shared audio is limited to canonical approved content resolved by the server;
+   user-specific speech is never globally cached.
 
 ## Flutter feature folders
 

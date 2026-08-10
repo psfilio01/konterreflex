@@ -56,6 +56,10 @@ supabase secrets set --env-file supabase/.env.production
 The mobile client never receives these values. Rotate a leaked key immediately,
 then redeploy the affected Functions.
 
+The speech gateway uses the Supabase-provided service-role key only to validate
+approved shared speech references and access the private scene-audio cache. No
+additional cache secret is required.
+
 ### Voices per app language
 
 The app language stored in `profiles.locale` controls UI copy, Gemini output,

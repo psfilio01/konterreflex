@@ -35,6 +35,11 @@ Deno.test("ElevenLabs TTS keeps the API key in a server header", async () => {
     role: "moderator",
     languageCode: "en",
   }, new AbortController().signal);
+  const profile = provider.synthesisProfile({
+    text: "Die Szene beginnt.",
+    role: "moderator",
+    languageCode: "en",
+  });
 
   assert(
     capturedUrl.includes("english_moderator_voice"),
@@ -46,6 +51,14 @@ Deno.test("ElevenLabs TTS keeps the API key in a server header", async () => {
     "expected key header",
   );
   assert(result.audio.length === 2, "expected audio bytes");
+  assert(
+    profile.voice === "english_moderator_voice",
+    "cache identity must use the resolved language voice",
+  );
+  assert(
+    profile.outputFormat === "mp3_44100_128",
+    "cache identity must include the output format",
+  );
 });
 
 Deno.test("ElevenLabs STT sends PCM metadata and returns a transcript", async () => {

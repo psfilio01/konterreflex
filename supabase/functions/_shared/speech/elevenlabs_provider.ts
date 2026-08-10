@@ -1,4 +1,5 @@
 import {
+  SynthesisProfile,
   SynthesizeRequest,
   SynthesizeResult,
   TranscribeRequest,
@@ -27,6 +28,7 @@ export interface ElevenLabsVoiceConfig extends ElevenLabsRoleVoices {
 export class ElevenLabsSpeechProvider
   implements TextToSpeechProvider, SpeechToTextProvider {
   readonly id = "elevenlabs";
+  private readonly outputFormat = "mp3_44100_128";
 
   constructor(
     private readonly apiKey: string,
@@ -52,7 +54,7 @@ export class ElevenLabsSpeechProvider
         encodeURIComponent(voiceId)
       }`,
     );
-    url.searchParams.set("output_format", "mp3_44100_128");
+    url.searchParams.set("output_format", this.outputFormat);
     const response = await this.fetcher(url, {
       method: "POST",
       signal,
@@ -69,6 +71,20 @@ export class ElevenLabsSpeechProvider
         "audio/mpeg",
       provider: this.id,
       model: this.ttsModel,
+    };
+  }
+
+  synthesisProfile(request: SynthesizeRequest): SynthesisProfile {
+    return {
+      provider: this.id,
+      model: this.ttsModel,
+      voice: this.voiceFor(
+        request.role,
+        request.languageCode ?? "de",
+        request.voiceId,
+      ),
+      outputFormat: this.outputFormat,
+      revision: "1",
     };
   }
 

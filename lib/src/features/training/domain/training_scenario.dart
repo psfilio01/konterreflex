@@ -20,10 +20,12 @@ class ScenarioTurn {
   const ScenarioTurn({
     required this.body,
     required this.sortOrder,
+    this.id,
     this.characterId,
     this.stageDirection,
   });
 
+  final String? id;
   final String? characterId;
   final String body;
   final String? stageDirection;
@@ -38,6 +40,7 @@ class TrainingScenario {
     required this.moderatorIntro,
     required this.characters,
     required this.turns,
+    this.sharedAudioEligible = false,
   });
 
   factory TrainingScenario.fromJson(Map<String, dynamic> json) {
@@ -56,6 +59,7 @@ class TrainingScenario {
     final turns = (json['scenario_turns'] as List? ?? const []).map((item) {
       final data = Map<String, dynamic>.from(item as Map);
       return ScenarioTurn(
+        id: data['id'] as String?,
         characterId: data['character_id'] as String?,
         body: data['body'] as String,
         stageDirection: data['stage_direction'] as String?,
@@ -70,6 +74,7 @@ class TrainingScenario {
       moderatorIntro: json['moderator_intro'] as String,
       characters: characters,
       turns: turns,
+      sharedAudioEligible: true,
     );
   }
 
@@ -79,18 +84,34 @@ class TrainingScenario {
   final String moderatorIntro;
   final List<ScenarioCharacter> characters;
   final List<ScenarioTurn> turns;
+  final bool sharedAudioEligible;
 
   bool get isGroup => characters.length > 1;
 
   List<SpeechLine> get speechLines {
     final byId = {for (final character in characters) character.id: character};
     return [
-      SpeechLine(text: moderatorIntro, role: VoiceRole.moderator),
+      SpeechLine(
+        text: moderatorIntro,
+        role: VoiceRole.moderator,
+        sharedReference: sharedAudioEligible
+            ? SharedSpeechReference(
+                kind: SharedSpeechResourceKind.scenarioIntro,
+                id: id,
+              )
+            : null,
+      ),
       for (final turn in turns)
         SpeechLine(
           text: turn.body,
           role: VoiceRole.actor,
           voiceId: byId[turn.characterId]?.voiceId,
+          sharedReference: !sharedAudioEligible || turn.id == null
+              ? null
+              : SharedSpeechReference(
+                  kind: SharedSpeechResourceKind.scenarioTurn,
+                  id: turn.id!,
+                ),
         ),
     ];
   }
