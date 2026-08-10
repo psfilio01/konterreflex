@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/features/speech_challenge/data/speech_challenge_repository.dart';
@@ -43,6 +44,7 @@ class SpeechChallengeController extends ChangeNotifier {
   QualitativeFeedback? _feedback;
   String? _transcript;
   String? _message;
+  bool _feedbackUnavailable = false;
 
   SpeechChallengeStatus get status => _status;
   ChallengePrompt get currentPrompt => challengeSet.prompts[_promptIndex];
@@ -58,6 +60,7 @@ class SpeechChallengeController extends ChangeNotifier {
     _promptIndex = 0;
     _feedback = null;
     _transcript = null;
+    _feedbackUnavailable = false;
     try {
       _session = await _repository.startSession(
         setId: challengeSet.id,
@@ -71,6 +74,11 @@ class SpeechChallengeController extends ChangeNotifier {
       if (_promptIndex == challengeSet.prompts.length) {
         await _repository.completeSession(_session!.id);
         _setStatus(SpeechChallengeStatus.complete);
+        if (_feedbackUnavailable) {
+          _message =
+              'Set abgeschlossen. Deine Antworten wurden gespeichert; das KI-Feedback war vorübergehend nicht verfügbar.';
+          notifyListeners();
+        }
       } else {
         _setStatus(SpeechChallengeStatus.ready);
       }
@@ -81,6 +89,7 @@ class SpeechChallengeController extends ChangeNotifier {
 
   Future<bool> _runPrompt(ChallengePrompt prompt) async {
     _voice.reset();
+    _feedback = null;
     _setStatus(SpeechChallengeStatus.playing);
     final played = await _voice.playScene([prompt.speechLine]);
     if (!played || _voice.snapshot.state != VoiceTurnState.awaitingUser) {
@@ -104,14 +113,22 @@ class SpeechChallengeController extends ChangeNotifier {
       clientId: _createId(),
       transcript: _transcript!,
     );
-    _feedback = await _feedbackRepository.evaluate(
-      scenario: scenario,
-      transcript: _transcript!,
-    );
-    await _feedbackRepository.save(
-        responseId: responseId, feedback: _feedback!);
-    await _voice
-        .presentFeedback('${_feedback!.headline}. ${_feedback!.improvement}');
+    try {
+      _feedback = await _feedbackRepository.evaluate(
+        scenario: scenario,
+        transcript: _transcript!,
+      );
+      await _feedbackRepository.save(
+          responseId: responseId, feedback: _feedback!);
+      await _voice
+          .presentFeedback('${_feedback!.headline}. ${_feedback!.improvement}');
+    } on AiGatewayException catch (error) {
+      if (!error.isCapacityUnavailable) rethrow;
+      _feedbackUnavailable = true;
+      const notice =
+          'Deine Antwort wurde gespeichert. Das KI-Feedback ist gerade ausgelastet. Wir machen mit dem nächsten Impuls weiter.';
+      await _voice.presentFeedback(notice);
+    }
     notifyListeners();
     return true;
   }

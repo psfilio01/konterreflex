@@ -14,6 +14,45 @@ class AiGatewayResult {
   final String promptVersion;
 }
 
+class AiGatewayException implements Exception {
+  const AiGatewayException({
+    required this.code,
+    required this.message,
+    required this.status,
+  });
+
+  factory AiGatewayException.fromFunctionException(
+    FunctionException exception,
+  ) {
+    final details = exception.details;
+    if (details is Map) {
+      final error = details['error'];
+      if (error is Map) {
+        final code = error['code'];
+        final message = error['message'];
+        if (code is String && message is String) {
+          return AiGatewayException(
+            code: code,
+            message: message,
+            status: exception.status,
+          );
+        }
+      }
+    }
+    return AiGatewayException(
+      code: 'gateway_request_failed',
+      message: 'Die KI ist gerade nicht erreichbar.',
+      status: exception.status,
+    );
+  }
+
+  final String code;
+  final String message;
+  final int status;
+
+  bool get isCapacityUnavailable => code == 'provider_capacity';
+}
+
 abstract interface class AiGateway {
   Future<AiGatewayResult> invoke({
     required String task,
@@ -31,10 +70,15 @@ class SupabaseAiGateway implements AiGateway {
     required String task,
     required Map<String, dynamic> payload,
   }) async {
-    final response = await _client.functions.invoke(
-      'ai-gateway',
-      body: {'task': task, 'payload': payload, 'schemaVersion': '1'},
-    );
+    final FunctionResponse response;
+    try {
+      response = await _client.functions.invoke(
+        'ai-gateway',
+        body: {'task': task, 'payload': payload, 'schemaVersion': '1'},
+      );
+    } on FunctionException catch (error) {
+      throw AiGatewayException.fromFunctionException(error);
+    }
     if (response.status < 200 || response.status >= 300) {
       throw StateError('AI gateway request failed.');
     }

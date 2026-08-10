@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
@@ -48,6 +49,37 @@ void main() {
     expect(serializedShape, isNot(contains('score')));
     expect(serializedShape, isNot(contains('leaderboard')));
     expect(serializedShape, isNot(contains('reaction')));
+  });
+
+  test('exhausted AI quota does not abort the hands-free challenge', () async {
+    final repository = _Repository();
+    final speech = _Speech();
+    final ids = <String>['session-client', 'response-1', 'response-2'];
+    final controller = SpeechChallengeController(
+      challengeSet: challengeSet,
+      repository: repository,
+      feedbackRepository: _UnavailableFeedbackRepository(),
+      voice: VoiceTurnController(
+        permission: _Permission(),
+        recorder: _HandsFreeRecorder(),
+        playback: _Playback(),
+        speech: speech,
+      ),
+      createId: () => ids.removeAt(0),
+    );
+
+    await controller.startHandsFree();
+
+    expect(controller.status, SpeechChallengeStatus.complete);
+    expect(controller.completedCount, 2);
+    expect(repository.responses, ['Antwort 1', 'Antwort 2']);
+    expect(repository.completed, isTrue);
+    expect(controller.feedback, isNull);
+    expect(controller.message, contains('Antworten wurden gespeichert'));
+    expect(
+      speech.synthesizedTexts.where((text) => text.contains('ausgelastet')),
+      hasLength(2),
+    );
   });
 }
 
@@ -115,6 +147,33 @@ class _FeedbackRepository implements FeedbackRepository {
       '';
 }
 
+class _UnavailableFeedbackRepository implements FeedbackRepository {
+  @override
+  Future<QualitativeFeedback> evaluate({
+    required TrainingScenario scenario,
+    required String transcript,
+  }) =>
+      throw const AiGatewayException(
+        code: 'provider_capacity',
+        message: 'Temporarily unavailable.',
+        status: 503,
+      );
+
+  @override
+  Future<void> save({
+    required String responseId,
+    required QualitativeFeedback feedback,
+  }) async {}
+
+  @override
+  Future<String> answerFollowUp({
+    required TrainingScenario scenario,
+    required QualitativeFeedback feedback,
+    required String question,
+  }) async =>
+      '';
+}
+
 const feedback = QualitativeFeedback(
   headline: 'Klar begonnen',
   explanation: 'Die Position ist verständlich.',
@@ -169,9 +228,16 @@ class _Playback implements AudioPlaybackQueue {
 
 class _Speech implements SpeechGateway {
   int transcriptions = 0;
+  final synthesizedTexts = <String>[];
   @override
-  Future<SpeechClip> synthesize(SpeechLine line) async => SpeechClip(
-      bytes: Uint8List.fromList([1]), mimeType: 'audio/mpeg', role: line.role);
+  Future<SpeechClip> synthesize(SpeechLine line) async {
+    synthesizedTexts.add(line.text);
+    return SpeechClip(
+        bytes: Uint8List.fromList([1]),
+        mimeType: 'audio/mpeg',
+        role: line.role);
+  }
+
   @override
   Future<TranscriptionResult> transcribe(RecordedAudio audio) async =>
       TranscriptionResult(

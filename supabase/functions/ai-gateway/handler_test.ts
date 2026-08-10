@@ -1,5 +1,5 @@
 import { MockAiProvider } from "../_shared/ai/mock_provider.ts";
-import { AiProvider } from "../_shared/ai/provider.ts";
+import { AiProvider, ProviderError } from "../_shared/ai/provider.ts";
 import { AiProviderRegistry } from "../_shared/ai/provider_registry.ts";
 import { createAiGatewayHandler } from "./handler.ts";
 
@@ -106,6 +106,80 @@ Deno.test("maps provider failures to a safe error", async () => {
   assert(
     !JSON.stringify(body).includes("secret provider diagnostic"),
     "must hide provider errors",
+  );
+});
+
+Deno.test("logs safe provider diagnostics without returning them", async () => {
+  const provider: AiProvider = {
+    id: "diagnostic",
+    generate: () =>
+      Promise.reject(
+        new ProviderError(
+          "request_failed",
+          "Sensitive diagnostic",
+          { httpStatus: 400, reason: "INVALID_ARGUMENT" },
+        ),
+      ),
+  };
+  const logs: Record<string, unknown>[] = [];
+  const handler = createAiGatewayHandler({
+    authenticate: async () => true,
+    providerId: provider.id,
+    providers: new AiProviderRegistry([provider]),
+    loadPrompt: async () => "Prompt",
+    createRequestId: () => "request-1",
+    log: (_message, metadata) => logs.push(metadata),
+  });
+
+  const response = await handler(request());
+  const body = await response.json();
+
+  assert(response.status === 502, "expected bad gateway");
+  assert(logs[0].providerCode === "request_failed", "expected error code");
+  assert(logs[0].providerHttpStatus === 400, "expected provider status");
+  assert(
+    logs[0].providerReason === "INVALID_ARGUMENT",
+    "expected provider reason",
+  );
+  assert(
+    !JSON.stringify(body).includes("INVALID_ARGUMENT") &&
+      !JSON.stringify(body).includes("Sensitive"),
+    "must keep provider diagnostics out of the response",
+  );
+});
+
+Deno.test("maps exhausted provider quota to temporary capacity", async () => {
+  const provider: AiProvider = {
+    id: "limited",
+    generate: () =>
+      Promise.reject(
+        new ProviderError(
+          "request_failed",
+          "Quota details",
+          { httpStatus: 429, reason: "RESOURCE_EXHAUSTED" },
+        ),
+      ),
+  };
+  const handler = createAiGatewayHandler({
+    authenticate: async () => true,
+    providerId: provider.id,
+    providers: new AiProviderRegistry([provider]),
+    loadPrompt: async () => "Prompt",
+    createRequestId: () => "request-1",
+  });
+
+  const response = await handler(request());
+  const body = await response.json();
+
+  assert(response.status === 503, "expected temporary unavailability");
+  assert(
+    body.error.code === "provider_capacity",
+    "expected capacity error code",
+  );
+  assert(
+    !JSON.stringify(body).includes("RESOURCE_EXHAUSTED") &&
+      !JSON.stringify(body).includes("Quota details"),
+    "must keep provider details private",
   );
 });
 

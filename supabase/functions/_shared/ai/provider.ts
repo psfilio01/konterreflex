@@ -25,6 +25,10 @@ export class ProviderError extends Error {
   constructor(
     readonly code: "configuration" | "request_failed" | "invalid_response",
     message: string,
+    readonly diagnostics: {
+      httpStatus?: number;
+      reason?: string;
+    } = {},
   ) {
     super(message);
     this.name = "ProviderError";

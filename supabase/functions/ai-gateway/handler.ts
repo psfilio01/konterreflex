@@ -1,5 +1,6 @@
 import { AiRequest, AiResponse, isAiTask } from "../_shared/contracts.ts";
 import { AiProviderRegistry } from "../_shared/ai/provider_registry.ts";
+import { ProviderError } from "../_shared/ai/provider.ts";
 import { isRecord, validateSchema } from "../_shared/ai/schema.ts";
 import { AiTaskDefinition, taskRegistry } from "../_shared/ai/task_registry.ts";
 
@@ -111,6 +112,7 @@ export function createAiGatewayHandler(
         requestId,
         code: safeError.code,
         status: safeError.status,
+        ...providerDiagnostics(error),
       });
       return errorResponse(requestId, safeError);
     }
@@ -178,8 +180,32 @@ async function runWithTimeout<T>(
   }
 }
 
+function providerDiagnostics(error: unknown): Record<string, unknown> {
+  if (!(error instanceof ProviderError)) return {};
+  return {
+    providerCode: error.code,
+    ...(error.diagnostics.httpStatus == null
+      ? {}
+      : { providerHttpStatus: error.diagnostics.httpStatus }),
+    ...(error.diagnostics.reason == null
+      ? {}
+      : { providerReason: error.diagnostics.reason }),
+  };
+}
+
 function toGatewayError(error: unknown): GatewayError {
   if (error instanceof GatewayError) return error;
+  if (
+    error instanceof ProviderError &&
+    error.code === "request_failed" &&
+    error.diagnostics.httpStatus === 429
+  ) {
+    return new GatewayError(
+      "provider_capacity",
+      503,
+      "Das KI-Feedback ist gerade ausgelastet. Bitte versuche es später erneut.",
+    );
+  }
   if (error instanceof Error && error.name === "AbortError") {
     return new GatewayError(
       "provider_timeout",
