@@ -88,6 +88,15 @@ const scenario = TrainingScenario(
 );
 
 const feedback = QualitativeFeedback(
+  overallSignal: FeedbackSignal.developing,
+  dimensionSignals: FeedbackDimensionSignals(
+    posture: FeedbackSignal.strong,
+    precision: FeedbackSignal.developing,
+    frame: FeedbackSignal.developing,
+    socialEffect: FeedbackSignal.strong,
+    naturalness: FeedbackSignal.strong,
+    escalationFit: FeedbackSignal.developing,
+  ),
   headline: 'Klarer zweiter Versuch',
   explanation: 'Du nimmst dir ruhig Raum.',
   strengths: ['Direkter Einstieg'],

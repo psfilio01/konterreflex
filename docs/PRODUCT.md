@@ -22,6 +22,10 @@ Users save useful phrases, words, rhetorical patterns and personal favorites by 
 ## Feedback
 Never reduce performance to a numerical score. Use concise qualitative language. Evaluate contextually across posture, precision, frame, social effect, naturalness and escalation fit.
 
+Results may use the categorical visual signals `strong`, `developing` and
+`focus` for rapid orientation. They must stay contextual, non-numeric,
+accessible without color and accompanied by explanatory qualitative feedback.
+
 The signed-in user chooses one app language in Settings. That one choice
 controls labels, curated training content, speech recognition, spoken voices
 and all user-facing AI output. German is the default; German and English are

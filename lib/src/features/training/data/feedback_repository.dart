@@ -43,7 +43,7 @@ class SupabaseFeedbackRepository implements FeedbackRepository {
     required String transcript,
   }) async {
     final result = await _ai.invoke(
-      task: 'response.evaluate',
+      task: 'response.evaluate_visual',
       payload: {
         'scenario': {
           'title': scenario.title,
@@ -71,6 +71,8 @@ class SupabaseFeedbackRepository implements FeedbackRepository {
       'response_id': responseId,
       'user_id': _userId,
       'headline': feedback.headline,
+      'overall_signal': feedback.overallSignal.wireName,
+      'dimension_signals': feedback.dimensionSignals.toJson(),
       'explanation': feedback.explanation,
       'strengths': feedback.strengths,
       'improvement': feedback.improvement,

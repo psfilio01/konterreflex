@@ -10,6 +10,7 @@ const prompts = [
   ["realLifeExtractV1", "real_life_extract_v1.md"],
   ["realLifeReconstructV1", "real_life_reconstruct_v1.md"],
   ["responseEvaluateV2", "response_evaluate_v2.md"],
+  ["responseEvaluateV3", "response_evaluate_v3.md"],
   ["scenarioGenerateV2", "scenario_generate_v2.md"],
   ["scenarioPersonalizeV1", "scenario_personalize_v1.md"],
   ["scenarioSafetyReviewV1", "scenario_safety_review_v1.md"],

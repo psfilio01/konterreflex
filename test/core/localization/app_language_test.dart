@@ -18,6 +18,15 @@ void main() {
 
   test('spoken feedback framing follows the selected app language', () {
     const feedback = QualitativeFeedback(
+      overallSignal: FeedbackSignal.strong,
+      dimensionSignals: FeedbackDimensionSignals(
+        posture: FeedbackSignal.strong,
+        precision: FeedbackSignal.strong,
+        frame: FeedbackSignal.developing,
+        socialEffect: FeedbackSignal.strong,
+        naturalness: FeedbackSignal.strong,
+        escalationFit: FeedbackSignal.developing,
+      ),
       headline: 'Clear',
       explanation: 'Your position is understandable',
       strengths: ['Calm opening'],

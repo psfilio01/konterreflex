@@ -183,6 +183,15 @@ class _UnavailableFeedbackRepository implements FeedbackRepository {
 }
 
 const feedback = QualitativeFeedback(
+  overallSignal: FeedbackSignal.developing,
+  dimensionSignals: FeedbackDimensionSignals(
+    posture: FeedbackSignal.strong,
+    precision: FeedbackSignal.developing,
+    frame: FeedbackSignal.developing,
+    socialEffect: FeedbackSignal.strong,
+    naturalness: FeedbackSignal.strong,
+    escalationFit: FeedbackSignal.developing,
+  ),
   headline: 'Klar begonnen',
   explanation: 'Die Position ist verständlich.',
   strengths: ['Direkter Einstieg'],

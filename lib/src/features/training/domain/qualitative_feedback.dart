@@ -1,6 +1,70 @@
 import 'package:flutter/widgets.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
 
+enum FeedbackSignal {
+  strong('strong'),
+  developing('developing'),
+  focus('focus');
+
+  const FeedbackSignal(this.wireName);
+
+  factory FeedbackSignal.fromWireName(String value) => switch (value) {
+        'strong' => FeedbackSignal.strong,
+        'developing' => FeedbackSignal.developing,
+        'focus' => FeedbackSignal.focus,
+        _ => throw const FormatException('Unsupported feedback signal.'),
+      };
+
+  final String wireName;
+}
+
+class FeedbackDimensionSignals {
+  const FeedbackDimensionSignals({
+    required this.posture,
+    required this.precision,
+    required this.frame,
+    required this.socialEffect,
+    required this.naturalness,
+    required this.escalationFit,
+  });
+
+  factory FeedbackDimensionSignals.fromJson(Map<String, dynamic> json) {
+    const requiredKeys = {
+      'posture',
+      'precision',
+      'frame',
+      'social_effect',
+      'naturalness',
+      'escalation_fit',
+    };
+    _requireExactKeys(json, requiredKeys);
+    return FeedbackDimensionSignals(
+      posture: _requiredSignal(json, 'posture'),
+      precision: _requiredSignal(json, 'precision'),
+      frame: _requiredSignal(json, 'frame'),
+      socialEffect: _requiredSignal(json, 'social_effect'),
+      naturalness: _requiredSignal(json, 'naturalness'),
+      escalationFit: _requiredSignal(json, 'escalation_fit'),
+    );
+  }
+
+  final FeedbackSignal posture;
+  final FeedbackSignal precision;
+  final FeedbackSignal frame;
+  final FeedbackSignal socialEffect;
+  final FeedbackSignal naturalness;
+  final FeedbackSignal escalationFit;
+
+  Map<String, dynamic> toJson() => {
+        'posture': posture.wireName,
+        'precision': precision.wireName,
+        'frame': frame.wireName,
+        'social_effect': socialEffect.wireName,
+        'naturalness': naturalness.wireName,
+        'escalation_fit': escalationFit.wireName,
+      };
+}
+
 class FeedbackDimensions {
   const FeedbackDimensions({
     required this.posture,
@@ -50,6 +114,8 @@ class FeedbackDimensions {
 
 class QualitativeFeedback {
   const QualitativeFeedback({
+    required this.overallSignal,
+    required this.dimensionSignals,
     required this.headline,
     required this.explanation,
     required this.strengths,
@@ -68,6 +134,8 @@ class QualitativeFeedback {
     required String promptVersion,
   }) {
     const requiredKeys = {
+      'overall_signal',
+      'dimension_signals',
       'headline',
       'explanation',
       'strengths',
@@ -79,10 +147,20 @@ class QualitativeFeedback {
     final strengths = _textList(data, 'strengths', maxLength: 3);
     final alternatives = _textList(data, 'alternatives', maxLength: 3);
     final dimensions = data['dimensions'];
+    final dimensionSignals = data['dimension_signals'];
     if (dimensions is! Map) {
       throw const FormatException('Feedback dimensions must be an object.');
     }
+    if (dimensionSignals is! Map) {
+      throw const FormatException(
+        'Feedback dimension signals must be an object.',
+      );
+    }
     return QualitativeFeedback(
+      overallSignal: _requiredSignal(data, 'overall_signal'),
+      dimensionSignals: FeedbackDimensionSignals.fromJson(
+        Map<String, dynamic>.from(dimensionSignals),
+      ),
       headline: _requiredText(data, 'headline'),
       explanation: _requiredText(data, 'explanation'),
       strengths: strengths,
@@ -97,6 +175,8 @@ class QualitativeFeedback {
     );
   }
 
+  final FeedbackSignal overallSignal;
+  final FeedbackDimensionSignals dimensionSignals;
   final String headline;
   final String explanation;
   final List<String> strengths;
@@ -117,6 +197,14 @@ class QualitativeFeedback {
     return '$headline. $explanation.$strength '
         '${strings.feedbackNextStep}: $improvement';
   }
+}
+
+FeedbackSignal _requiredSignal(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! String) {
+    throw FormatException('$key must be a qualitative signal.');
+  }
+  return FeedbackSignal.fromWireName(value);
 }
 
 void _requireExactKeys(Map<String, dynamic> json, Set<String> expected) {
