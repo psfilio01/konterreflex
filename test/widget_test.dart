@@ -41,6 +41,37 @@ void main() {
     expect(find.text('Golden Book'), findsOneWidget);
   });
 
+  testWidgets('profile language controls all home labels', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authUserProvider.overrideWith((ref) => Stream.value(testUser)),
+          passwordRecoveryProvider.overrideWith((ref) => Stream.value(false)),
+          profileProvider.overrideWith(
+            (ref) async => const UserProfile(
+              id: 'user-1',
+              locale: 'en',
+              displayName: 'Ada',
+            ),
+          ),
+        ],
+        child: const KonterreflexApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Settings'), findsOneWidget);
+    expect(find.text('What would you like to practice?'), findsOneWidget);
+    expect(find.text('Real-life situation'), findsOneWidget);
+    expect(find.text('Echte Situation'), findsNothing);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('App language'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+  });
+
   testWidgets('signed out users are redirected to sign in', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

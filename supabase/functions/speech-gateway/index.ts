@@ -15,11 +15,28 @@ const authClient = createClient(supabaseUrl, supabaseKey, {
 });
 
 const elevenLabsKey = Deno.env.get("ELEVENLABS_API_KEY");
+const legacyVoices = {
+  moderator: Deno.env.get("ELEVENLABS_VOICE_MODERATOR"),
+  actor: Deno.env.get("ELEVENLABS_VOICE_ACTOR"),
+  intelligence: Deno.env.get("ELEVENLABS_VOICE_INTELLIGENCE"),
+};
 const elevenLabs = elevenLabsKey
   ? new ElevenLabsSpeechProvider(elevenLabsKey, {
-    moderator: Deno.env.get("ELEVENLABS_VOICE_MODERATOR"),
-    actor: Deno.env.get("ELEVENLABS_VOICE_ACTOR"),
-    intelligence: Deno.env.get("ELEVENLABS_VOICE_INTELLIGENCE"),
+    ...legacyVoices,
+    de: {
+      moderator: Deno.env.get("ELEVENLABS_VOICE_MODERATOR_DE") ??
+        legacyVoices.moderator,
+      actor: Deno.env.get("ELEVENLABS_VOICE_ACTOR_DE") ?? legacyVoices.actor,
+      intelligence: Deno.env.get("ELEVENLABS_VOICE_INTELLIGENCE_DE") ??
+        legacyVoices.intelligence,
+    },
+    en: {
+      moderator: Deno.env.get("ELEVENLABS_VOICE_MODERATOR_EN") ??
+        legacyVoices.moderator,
+      actor: Deno.env.get("ELEVENLABS_VOICE_ACTOR_EN") ?? legacyVoices.actor,
+      intelligence: Deno.env.get("ELEVENLABS_VOICE_INTELLIGENCE_EN") ??
+        legacyVoices.intelligence,
+    },
   })
   : null;
 

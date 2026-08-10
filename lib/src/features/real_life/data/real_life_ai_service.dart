@@ -12,9 +12,15 @@ abstract interface class RealLifeAiService {
 }
 
 class GatewayRealLifeAiService implements RealLifeAiService {
-  GatewayRealLifeAiService(this._ai);
+  GatewayRealLifeAiService(
+    this._ai, {
+    this.scenarioTitle = 'Deine echte Situation',
+    this.scenarioCategory = 'Echte Situation',
+  });
 
   final AiGateway _ai;
+  final String scenarioTitle;
+  final String scenarioCategory;
 
   @override
   Future<RealLifeExtraction> extract(String transcript) async {
@@ -38,6 +44,11 @@ class GatewayRealLifeAiService implements RealLifeAiService {
         'variation_requested': similarVariation,
       },
     );
-    return RealLifeReconstruction.fromJson(result.data, id: caseId);
+    return RealLifeReconstruction.fromJson(
+      result.data,
+      id: caseId,
+      title: scenarioTitle,
+      category: scenarioCategory,
+    );
   }
 }

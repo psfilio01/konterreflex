@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
+
 class FeedbackDimensions {
   const FeedbackDimensions({
     required this.posture,
@@ -104,9 +107,15 @@ class QualitativeFeedback {
   final String model;
   final String promptVersion;
 
-  String get spokenSummary {
-    final strength = strengths.isEmpty ? '' : ' Stärke: ${strengths.first}.';
-    return '$headline. $explanation.$strength Nächster Schritt: $improvement';
+  String get spokenSummary => spokenSummaryFor(
+        lookupAppLocalizations(const Locale('de')),
+      );
+
+  String spokenSummaryFor(AppLocalizations strings) {
+    final strength =
+        strengths.isEmpty ? '' : strings.spokenStrength(strengths.first);
+    return '$headline. $explanation.$strength '
+        '${strings.feedbackNextStep}: $improvement';
   }
 }
 

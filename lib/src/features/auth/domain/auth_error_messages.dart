@@ -1,7 +1,14 @@
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Maps provider errors to calm German product copy without exposing internals.
-String authErrorMessageFor(Object error, {required String fallback}) {
+String authErrorMessageFor(
+  Object error, {
+  required String fallback,
+  AppLocalizations? strings,
+}) {
+  final l10n = strings ?? lookupAppLocalizations(const Locale('de'));
   if (error is! AuthException) return fallback;
 
   final message = error.message.toLowerCase();
@@ -12,33 +19,33 @@ String authErrorMessageFor(Object error, {required String fallback}) {
       code.contains('rate_limit') ||
       message.contains('rate limit') ||
       message.contains('over_email')) {
-    return 'Zu viele Versuche in kurzer Zeit. Bitte warte einen Moment und versuche es erneut.';
+    return l10n.authTooManyAttempts;
   }
   if (message.contains('invalid login credentials') ||
       code.contains('invalid_credentials')) {
-    return 'E-Mail-Adresse oder Passwort stimmen nicht.';
+    return l10n.authInvalidCredentials;
   }
   if (message.contains('email not confirmed')) {
-    return 'Bitte bestätige zuerst deine E-Mail-Adresse.';
+    return l10n.authEmailNotConfirmed;
   }
   if (message.contains('weak password') || code.contains('weak_password')) {
-    return 'Das Passwort ist nicht sicher genug. Verwende mindestens 8 Zeichen.';
+    return l10n.authWeakPassword;
   }
   if (message.contains('user already registered') ||
       code.contains('user_already_exists')) {
-    return 'Für diese E-Mail-Adresse besteht bereits ein Konto.';
+    return l10n.authUserExists;
   }
   if (message.contains('same password')) {
-    return 'Das neue Passwort muss sich vom bisherigen unterscheiden.';
+    return l10n.authSamePassword;
   }
   if (message.contains('provider is not enabled') ||
       message.contains('unsupported provider')) {
-    return 'Diese Anmeldung ist noch nicht freigeschaltet.';
+    return l10n.authProviderDisabled;
   }
   if (message.contains('expired') ||
       code.contains('otp_expired') ||
       message.contains('flow state')) {
-    return 'Die Anfrage ist abgelaufen. Bitte starte den Vorgang erneut.';
+    return l10n.authRequestExpired;
   }
   return fallback;
 }

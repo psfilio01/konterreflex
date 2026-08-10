@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
@@ -25,15 +26,18 @@ class VoiceTurnController extends ChangeNotifier {
     required VoiceRecorder recorder,
     required AudioPlaybackQueue playback,
     required SpeechGateway speech,
+    AppLocalizations? strings,
   })  : _permission = permission,
         _recorder = recorder,
         _playback = playback,
-        _speech = speech;
+        _speech = speech,
+        _strings = strings ?? lookupAppLocalizations(const Locale('de'));
 
   final MicrophonePermissionGateway _permission;
   final VoiceRecorder _recorder;
   final AudioPlaybackQueue _playback;
   final SpeechGateway _speech;
+  final AppLocalizations _strings;
   final VoiceStateMachine _machine = VoiceStateMachine();
   VoiceTurnSnapshot _snapshot = const VoiceTurnSnapshot(
     state: VoiceTurnState.idle,
@@ -72,22 +76,22 @@ class VoiceTurnController extends ChangeNotifier {
   String _sceneFailureMessage(Object error) {
     if (error is! VoiceServiceException) {
       debugPrint('[voice] scene_failed code=VOICE_UNKNOWN');
-      return 'Die Szene konnte nicht abgespielt werden (VOICE_UNKNOWN).';
+      return _strings.voiceSceneUnknown('VOICE_UNKNOWN');
     }
     debugPrint('[voice] scene_failed code=${error.diagnosticCode}');
     return switch (error.kind) {
       VoiceServiceFailureKind.authentication =>
-        'Die Audio-Anmeldung ist abgelaufen. Bitte melde dich erneut an (${error.diagnosticCode}).',
+        _strings.voiceAuthExpired(error.diagnosticCode),
       VoiceServiceFailureKind.request =>
-        'Die Sprachanfrage wurde abgelehnt (${error.diagnosticCode}).',
+        _strings.voiceRequestRejected(error.diagnosticCode),
       VoiceServiceFailureKind.timeout =>
-        'Die Sprachausgabe hat zu lange gebraucht. Bitte versuche es erneut (${error.diagnosticCode}).',
+        _strings.voiceTimeout(error.diagnosticCode),
       VoiceServiceFailureKind.unavailable =>
-        'Die Sprachausgabe ist gerade nicht erreichbar (${error.diagnosticCode}).',
+        _strings.voiceUnavailable(error.diagnosticCode),
       VoiceServiceFailureKind.invalidResponse =>
-        'Die empfangenen Audiodaten waren ungültig (${error.diagnosticCode}).',
+        _strings.voiceInvalidAudio(error.diagnosticCode),
       VoiceServiceFailureKind.playback =>
-        'Das iPhone konnte die Audiodatei nicht wiedergeben (${error.diagnosticCode}).',
+        _strings.voicePlaybackError(error.diagnosticCode),
     };
   }
 
@@ -100,8 +104,8 @@ class VoiceTurnController extends ChangeNotifier {
       _publish(
         permissionStatus: status,
         message: status == MicrophonePermissionStatus.permanentlyDenied
-            ? 'Mikrofonzugriff ist deaktiviert. Du kannst ihn in den Einstellungen erlauben.'
-            : 'Ohne Mikrofonzugriff ist keine Sprachaufnahme möglich.',
+            ? _strings.microphoneDisabled
+            : _strings.microphoneRecordingRequired,
       );
       return status;
     }
@@ -109,7 +113,7 @@ class VoiceTurnController extends ChangeNotifier {
       await _recorder.start();
       _moveTo(VoiceTurnState.recording);
     } catch (_) {
-      _publish(message: 'Die Aufnahme konnte nicht gestartet werden.');
+      _publish(message: _strings.recordingStartError);
     }
     return status;
   }
@@ -126,8 +130,7 @@ class VoiceTurnController extends ChangeNotifier {
       if (_machine.state == VoiceTurnState.processing) {
         _machine.interrupt();
         _publish(
-          message:
-              'Deine Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.',
+          message: _strings.responseProcessError,
         );
       }
     }
@@ -149,8 +152,7 @@ class VoiceTurnController extends ChangeNotifier {
       if (operation == _operation) {
         _machine.interrupt();
         _publish(
-          message:
-              'Deine Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.',
+          message: _strings.responseProcessError,
         );
       }
       return null;
@@ -169,7 +171,7 @@ class VoiceTurnController extends ChangeNotifier {
     if (status != MicrophonePermissionStatus.granted) {
       _publish(
         permissionStatus: status,
-        message: 'Ohne Mikrofonzugriff ist kein freihändiger Ablauf möglich.',
+        message: _strings.microphoneHandsFreeRequired,
       );
       return null;
     }
@@ -185,7 +187,7 @@ class VoiceTurnController extends ChangeNotifier {
     } catch (_) {
       if (operation == _operation) {
         _machine.interrupt();
-        _publish(message: 'Deine Antwort konnte nicht verstanden werden.');
+        _publish(message: _strings.responseNotUnderstood);
       }
       return null;
     }
@@ -213,9 +215,7 @@ class VoiceTurnController extends ChangeNotifier {
     } catch (_) {
       if (operation == _operation) {
         _machine.interrupt();
-        _publish(
-            message:
-                'Deine Antwort konnte nicht verarbeitet werden. Bitte versuche es erneut.');
+        _publish(message: _strings.responseProcessError);
       }
     }
   }
@@ -234,7 +234,7 @@ class VoiceTurnController extends ChangeNotifier {
     await _playback.stop();
     if (_machine.state == VoiceTurnState.recording) await _recorder.cancel();
     _machine.interrupt();
-    _publish(message: 'Wiedergabe unterbrochen. Du bist dran.');
+    _publish(message: _strings.playbackInterrupted);
   }
 
   Future<bool> openMicrophoneSettings() => _permission.openSettings();

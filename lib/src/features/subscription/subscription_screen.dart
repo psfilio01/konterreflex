@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/core/billing/billing_providers.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 
 class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
@@ -11,7 +12,7 @@ class SubscriptionScreen extends ConsumerWidget {
     final provider = ref.watch(billingProviderProvider);
     final action = ref.watch(billingActionProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Abo und Zugriff')),
+      appBar: AppBar(title: Text(context.l10n.subscriptionAccessTitle)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
@@ -25,20 +26,21 @@ class SubscriptionScreen extends ConsumerWidget {
                       Text(
                           value.isPremium
                               ? 'Konterreflex Pro'
-                              : 'Kostenloser Zugriff',
+                              : context.l10n.freeAccess,
                           style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: AppSpacing.sm),
                       Text(value.isPremium
-                          ? 'Dein Pro-Zugriff ist serverseitig bestätigt.'
-                          : 'Freie Nutzung und Grenzen werden serverseitig konfiguriert.'),
+                          ? context.l10n.premiumConfirmed
+                          : context.l10n.freeAccessBody),
                       if (value.validUntil != null)
-                        Text(
-                            'Aktueller Zeitraum bis ${MaterialLocalizations.of(context).formatCompactDate(value.validUntil!.toLocal())}'),
+                        Text(context.l10n.currentPeriodUntil(
+                          MaterialLocalizations.of(context)
+                              .formatCompactDate(value.validUntil!.toLocal()),
+                        )),
                     ]),
               ),
             ),
-            error: (_, __) =>
-                const Text('Der Zugriff konnte nicht geladen werden.'),
+            error: (_, __) => Text(context.l10n.accessLoadError),
             loading: () => const Center(child: CircularProgressIndicator()),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -54,41 +56,38 @@ class SubscriptionScreen extends ConsumerWidget {
                           : () => ref
                               .read(billingActionProvider.notifier)
                               .purchase(),
-                      child: const Text('Pro freischalten')),
+                      child: Text(context.l10n.unlockPro)),
                 if (billing.canManage)
                   OutlinedButton(
                       onPressed: action.isLoading
                           ? null
                           : () =>
                               ref.read(billingActionProvider.notifier).manage(),
-                      child: const Text('Abo verwalten')),
+                      child: Text(context.l10n.manageSubscription)),
                 OutlinedButton.icon(
                     onPressed: action.isLoading
                         ? null
                         : () =>
                             ref.read(billingActionProvider.notifier).restore(),
                     icon: const Icon(Icons.restore_rounded),
-                    label: const Text('Käufe wiederherstellen')),
+                    label: Text(context.l10n.restorePurchases)),
                 TextButton(
                     onPressed: action.isLoading
                         ? null
                         : () =>
                             ref.read(billingActionProvider.notifier).refresh(),
-                    child: const Text('Zugriff aktualisieren')),
+                    child: Text(context.l10n.refreshAccess)),
               ],
             ),
-            error: (_, __) => const Text(
-                'Für diese Plattform ist noch kein Kaufkanal eingerichtet. Du kannst deinen Zugriff trotzdem aktualisieren.'),
+            error: (_, __) => Text(context.l10n.billingChannelMissing),
             loading: () => const LinearProgressIndicator(),
           ),
           if (action.hasError)
-            const Padding(
-                padding: EdgeInsets.only(top: AppSpacing.md),
-                child: Text(
-                    'Die Abrechnung konnte nicht abgeschlossen werden. Es wurde kein Zugriff lokal freigeschaltet.')),
+            Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: Text(context.l10n.billingError)),
           const SizedBox(height: AppSpacing.lg),
-          const Text(
-              'Der verfügbare Kaufweg hängt von Plattform, Region und Store-Regeln ab. Ein erfolgreicher Bezahlbildschirm allein schaltet keine Funktionen frei.'),
+          Text(context.l10n.billingDisclaimer),
         ],
       ),
     );

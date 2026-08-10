@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/auth/presentation/reset_password_screen.dart';
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
@@ -89,7 +90,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Text(
-              'Die Ansicht konnte nicht geladen werden.\n${state.error}',
+              context.l10n.routeLoadError,
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.foreground, fontSize: 16),
             ),

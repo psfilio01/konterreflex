@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/features/golden_book/application/golden_book_providers.dart';
 import 'package:konterreflex/src/features/golden_book/domain/golden_book_entry.dart';
 
@@ -19,7 +20,7 @@ class _GoldenBookScreenState extends ConsumerState<GoldenBookScreen> {
   Widget build(BuildContext context) {
     final entries = ref.watch(goldenBookEntriesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Golden Book')),
+      appBar: AppBar(title: Text(context.l10n.goldenBookTitle)),
       body: SafeArea(
         child: entries.when(
           data: (all) {
@@ -44,9 +45,9 @@ class _GoldenBookScreenState extends ConsumerState<GoldenBookScreen> {
               children: [
                 TextField(
                   onChanged: (value) => setState(() => _query = value),
-                  decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search_rounded),
-                      labelText: 'Formulierungen durchsuchen'),
+                  decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      labelText: context.l10n.searchPhrases),
                 ),
                 if (categories.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.md),
@@ -54,7 +55,7 @@ class _GoldenBookScreenState extends ConsumerState<GoldenBookScreen> {
                     spacing: AppSpacing.xs,
                     children: [
                       FilterChip(
-                          label: const Text('Alle'),
+                          label: Text(context.l10n.all),
                           selected: _category == null,
                           onSelected: (_) => setState(() => _category = null)),
                       for (final category in categories)
@@ -68,18 +69,17 @@ class _GoldenBookScreenState extends ConsumerState<GoldenBookScreen> {
                 ],
                 const SizedBox(height: AppSpacing.md),
                 if (visible.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(AppSpacing.xl),
-                    child: Text(
-                        'Noch keine passenden Formulierungen. Speichere Favoriten direkt aus deinem Training.',
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Text(context.l10n.noGoldenBookEntries,
                         textAlign: TextAlign.center),
                   ),
                 for (final entry in visible) _EntryCard(entry: entry),
               ],
             );
           },
-          error: (_, __) => const Center(
-              child: Text('Dein Golden Book konnte nicht geladen werden.')),
+          error: (_, __) =>
+              Center(child: Text(context.l10n.goldenBookLoadError)),
           loading: () => const Center(child: CircularProgressIndicator()),
         ),
       ),
@@ -102,7 +102,7 @@ class _EntryCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SelectableText('„${entry.phrase}“',
+                    SelectableText(context.l10n.quotedPhrase(entry.phrase),
                         style: Theme.of(context).textTheme.titleMedium),
                     if (entry.category != null) ...[
                       const SizedBox(height: AppSpacing.xs),
@@ -110,16 +110,16 @@ class _EntryCard extends ConsumerWidget {
                           style: const TextStyle(color: AppColors.muted)),
                     ],
                     if (entry.sourceSessionId != null)
-                      const Padding(
-                        padding: EdgeInsets.only(top: AppSpacing.xs),
-                        child: Text('Aus einer Trainingseinheit',
-                            style: TextStyle(color: AppColors.muted)),
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.xs),
+                        child: Text(context.l10n.fromTrainingSession,
+                            style: const TextStyle(color: AppColors.muted)),
                       ),
                   ],
                 ),
               ),
               IconButton(
-                tooltip: 'Eintrag löschen',
+                tooltip: context.l10n.deleteEntry,
                 onPressed: () async {
                   await ref.read(goldenBookRepositoryProvider).delete(entry.id);
                   ref.invalidate(goldenBookEntriesProvider);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 
 class OptionalTranscript extends StatefulWidget {
   const OptionalTranscript({
@@ -27,12 +28,13 @@ class _OptionalTranscriptState extends State<OptionalTranscript> {
           onPressed: () => setState(() => _visible = !_visible),
           icon:
               Icon(_visible ? Icons.visibility_off : Icons.subtitles_outlined),
-          label:
-              Text(_visible ? 'Transkript ausblenden' : 'Transkript anzeigen'),
+          label: Text(_visible
+              ? context.l10n.hideTranscript
+              : context.l10n.showTranscript),
         ),
         if (_visible)
           Semantics(
-            label: 'Transkript',
+            label: context.l10n.transcriptLabel,
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.md),

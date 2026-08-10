@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/features/real_life/data/real_life_ai_service.dart';
@@ -36,6 +37,7 @@ class RealLifeReplayController extends ChangeNotifier {
     required RealLifeRepository repository,
     required FeedbackRepository feedbackRepository,
     String Function()? createId,
+    AppLocalizations? strings,
   })  : _permission = permission,
         _recorder = recorder,
         _playback = playback,
@@ -46,7 +48,8 @@ class RealLifeReplayController extends ChangeNotifier {
         _createId = createId ?? createClientUuid,
         _caseClientId = (createId ?? createClientUuid)(),
         _sessionClientId = (createId ?? createClientUuid)(),
-        _responseClientId = (createId ?? createClientUuid)();
+        _responseClientId = (createId ?? createClientUuid)(),
+        _strings = strings ?? lookupAppLocalizations(const Locale('de'));
 
   final MicrophonePermissionGateway _permission;
   final VoiceRecorder _recorder;
@@ -56,6 +59,7 @@ class RealLifeReplayController extends ChangeNotifier {
   final RealLifeRepository _repository;
   final FeedbackRepository _feedbackRepository;
   final String Function() _createId;
+  final AppLocalizations _strings;
   String _caseClientId;
   String _sessionClientId;
   String _responseClientId;
@@ -106,7 +110,7 @@ class RealLifeReplayController extends ChangeNotifier {
       _sourceTranscript = transcript.transcript;
       await _extractAndSave();
     } catch (_) {
-      _setError('Die Situation konnte nicht verarbeitet werden.');
+      _setError(_strings.realLifeProcessError);
     }
   }
 
@@ -124,7 +128,7 @@ class RealLifeReplayController extends ChangeNotifier {
         _setStatus(RealLifeReplayStatus.recordingFollowUp);
       }
     } catch (_) {
-      _setError('Die Rückfrage konnte nicht gestartet werden.');
+      _setError(_strings.followUpStartError);
     }
   }
 
@@ -135,12 +139,12 @@ class RealLifeReplayController extends ChangeNotifier {
     try {
       final audio = await _recorder.stop();
       final answer = await _speech.transcribe(audio);
-      _sourceTranscript =
-          '${_sourceTranscript!}\nErgänzung zu "$question": ${answer.transcript}';
+      _sourceTranscript = '${_sourceTranscript!}\n'
+          '${_strings.realLifeFollowUpTranscript(question, answer.transcript)}';
       _followUpCount += 1;
       await _extractAndSave();
     } catch (_) {
-      _setError('Die Ergänzung konnte nicht verarbeitet werden.');
+      _setError(_strings.realLifeAdditionError);
     }
   }
 
@@ -168,7 +172,7 @@ class RealLifeReplayController extends ChangeNotifier {
       _scenario = result.scenario;
       _setStatus(RealLifeReplayStatus.readyToReplay);
     } catch (_) {
-      _setError('Die Szene konnte nicht rekonstruiert werden.');
+      _setError(_strings.realLifeReconstructError);
     }
   }
 
@@ -188,7 +192,7 @@ class RealLifeReplayController extends ChangeNotifier {
       await _playback.playAll();
       _setStatus(RealLifeReplayStatus.awaitingResponse);
     } catch (_) {
-      _setError('Die rekonstruierte Szene konnte nicht abgespielt werden.');
+      _setError(_strings.realLifePlaybackError);
     }
   }
 
@@ -228,7 +232,7 @@ class RealLifeReplayController extends ChangeNotifier {
       await _playback.enqueue(
         await _speech.synthesize(
           SpeechLine(
-            text: _feedback!.spokenSummary,
+            text: _feedback!.spokenSummaryFor(_strings),
             role: VoiceRole.intelligence,
           ),
         ),
@@ -236,7 +240,7 @@ class RealLifeReplayController extends ChangeNotifier {
       await _playback.playAll();
       _setStatus(RealLifeReplayStatus.feedbackReady);
     } catch (_) {
-      _setError('Deine Antwort konnte nicht vollständig ausgewertet werden.');
+      _setError(_strings.realLifeEvaluationError);
     }
   }
 
@@ -258,7 +262,7 @@ class RealLifeReplayController extends ChangeNotifier {
       _feedback = null;
       _setStatus(RealLifeReplayStatus.readyToReplay);
     } catch (_) {
-      _setError('Eine ähnliche Variante konnte nicht erstellt werden.');
+      _setError(_strings.realLifeVariationError);
     }
   }
 
@@ -275,8 +279,8 @@ class RealLifeReplayController extends ChangeNotifier {
     if (permission != MicrophonePermissionStatus.granted) {
       _setError(
         permission == MicrophonePermissionStatus.permanentlyDenied
-            ? 'Mikrofonzugriff ist in den Einstellungen deaktiviert.'
-            : 'Für diesen Sprachfluss wird Mikrofonzugriff benötigt.',
+            ? _strings.microphoneSettingsDisabled
+            : _strings.microphoneFlowRequired,
       );
       return false;
     }

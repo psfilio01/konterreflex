@@ -47,12 +47,35 @@ supabase secrets set --env-file supabase/.env.production
 `supabase/.env.production` must remain untracked. Required production groups:
 
 - AI: `GEMINI_API_KEY`; optional model/provider/timeout settings.
-- Speech: `ELEVENLABS_API_KEY` and all three `ELEVENLABS_VOICE_*` IDs.
+- Speech: `ELEVENLABS_API_KEY` and the three fallback IDs
+  `ELEVENLABS_VOICE_MODERATOR`, `ELEVENLABS_VOICE_ACTOR` and
+  `ELEVENLABS_VOICE_INTELLIGENCE`.
 - Billing: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
   `STRIPE_PRO_PRICE_ID`, and an HTTPS `BILLING_RETURN_URL`.
 
 The mobile client never receives these values. Rotate a leaked key immediately,
 then redeploy the affected Functions.
+
+### Voices per app language
+
+The app language stored in `profiles.locale` controls UI copy, Gemini output,
+speech recognition and voice selection together. Configure a different voice
+for each role and language with:
+
+```text
+ELEVENLABS_VOICE_MODERATOR_DE
+ELEVENLABS_VOICE_ACTOR_DE
+ELEVENLABS_VOICE_INTELLIGENCE_DE
+ELEVENLABS_VOICE_MODERATOR_EN
+ELEVENLABS_VOICE_ACTOR_EN
+ELEVENLABS_VOICE_INTELLIGENCE_EN
+```
+
+Language-specific values take precedence. A missing `_DE` or `_EN` value falls
+back to the corresponding unqualified ID, so existing deployments continue to
+work while the six voice variants are configured. After changing a Supabase
+secret, redeploy `speech-gateway`; no provider key or voice ID belongs in the
+Flutter environment.
 
 The Google project behind `GEMINI_API_KEY` must have available Gemini API
 quota. The gateway maps exhausted quota to a temporary capacity error. Speech

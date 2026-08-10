@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
@@ -25,10 +26,12 @@ class SpeechChallengeController extends ChangeNotifier {
     required FeedbackRepository feedbackRepository,
     required VoiceTurnController voice,
     String Function()? createId,
+    AppLocalizations? strings,
   })  : _repository = repository,
         _feedbackRepository = feedbackRepository,
         _voice = voice,
-        _createId = createId ?? createClientUuid {
+        _createId = createId ?? createClientUuid,
+        _strings = strings ?? lookupAppLocalizations(const Locale('de')) {
     _voice.addListener(_relayVoice);
   }
 
@@ -37,6 +40,7 @@ class SpeechChallengeController extends ChangeNotifier {
   final FeedbackRepository _feedbackRepository;
   final VoiceTurnController _voice;
   final String Function() _createId;
+  final AppLocalizations _strings;
   SpeechChallengeStatus _status = SpeechChallengeStatus.ready;
   TrainingSessionRecord? _session;
   int _promptIndex = 0;
@@ -75,15 +79,14 @@ class SpeechChallengeController extends ChangeNotifier {
         await _repository.completeSession(_session!.id);
         _setStatus(SpeechChallengeStatus.complete);
         if (_feedbackUnavailable) {
-          _message =
-              'Set abgeschlossen. Deine Antworten wurden gespeichert; das KI-Feedback war vorübergehend nicht verfügbar.';
+          _message = _strings.challengeCompleteWithoutFeedback;
           notifyListeners();
         }
       } else {
         _setStatus(SpeechChallengeStatus.ready);
       }
     } catch (_) {
-      _setError('Die Challenge konnte gerade nicht fortgesetzt werden.');
+      _setError(_strings.challengeContinueError);
     }
   }
 
@@ -94,14 +97,14 @@ class SpeechChallengeController extends ChangeNotifier {
     final played = await _voice.playScene([prompt.speechLine]);
     if (!played || _voice.snapshot.state != VoiceTurnState.awaitingUser) {
       _setError(
-        _voice.snapshot.message ?? 'Der Impuls konnte nicht abgespielt werden.',
+        _voice.snapshot.message ?? _strings.promptPlaybackError,
       );
       return false;
     }
     _setStatus(SpeechChallengeStatus.listening);
     final result = await _voice.captureHandsFree();
     if (result == null || result.transcript.trim().isEmpty) {
-      _setError('Deine Antwort konnte nicht verstanden werden.');
+      _setError(_strings.responseNotUnderstood);
       return false;
     }
     _transcript = result.transcript.trim();
@@ -125,8 +128,7 @@ class SpeechChallengeController extends ChangeNotifier {
     } on AiGatewayException catch (error) {
       if (!error.isCapacityUnavailable) rethrow;
       _feedbackUnavailable = true;
-      const notice =
-          'Deine Antwort wurde gespeichert. Das KI-Feedback ist gerade ausgelastet. Wir machen mit dem nächsten Impuls weiter.';
+      final notice = _strings.feedbackCapacityNotice;
       await _voice.presentFeedback(notice);
     }
     notifyListeners();

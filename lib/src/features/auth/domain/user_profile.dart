@@ -9,7 +9,10 @@ class UserProfile {
     return UserProfile(
       id: json['id'] as String,
       displayName: json['display_name'] as String?,
-      locale: json['locale'] as String? ?? 'de',
+      locale: switch (json['locale']) {
+        'en' => 'en',
+        _ => 'de',
+      },
     );
   }
 

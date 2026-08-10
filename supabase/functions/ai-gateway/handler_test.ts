@@ -7,7 +7,10 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-function request(task = "conversation.reply"): Request {
+function request(
+  task = "conversation.reply",
+  responseLanguage: "de" | "en" = "de",
+): Request {
   return new Request("http://localhost/ai-gateway", {
     method: "POST",
     headers: {
@@ -17,6 +20,7 @@ function request(task = "conversation.reply"): Request {
     body: JSON.stringify({
       task,
       schemaVersion: "1",
+      responseLanguage,
       payload: { message: "Was könnte ich sagen?" },
     }),
   });
@@ -52,6 +56,44 @@ Deno.test("routes an approved task and returns trace metadata", async () => {
   );
   assert(body.schemaVersion === "1", "expected schema metadata");
   assert(body.requestId === "request-1", "expected request trace");
+});
+
+Deno.test("adds the selected response language to the trusted prompt", async () => {
+  const provider = new MockAiProvider({ reply: "I see that differently." });
+  const response = await handlerFor(provider)(
+    request("conversation.reply", "en"),
+  );
+
+  assert(response.status === 200, "expected success");
+  assert(
+    provider.lastRequest?.prompt.includes("user-facing text value in English"),
+    "expected English response instruction",
+  );
+  assert(
+    !Object.hasOwn(provider.lastRequest?.payload ?? {}, "responseLanguage"),
+    "language must be a trusted prompt instruction, not user payload",
+  );
+});
+
+Deno.test("rejects unsupported response languages", async () => {
+  const provider = new MockAiProvider({ reply: "unused" });
+  const invalid = new Request("http://localhost/ai-gateway", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer test-token",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      task: "conversation.reply",
+      schemaVersion: "1",
+      responseLanguage: "fr",
+      payload: { message: "Bonjour" },
+    }),
+  });
+
+  const response = await handlerFor(provider)(invalid);
+  assert(response.status === 400, "expected invalid request");
+  assert(provider.lastRequest === null, "provider must not be called");
 });
 
 Deno.test("creates a request ID with the production default", async () => {

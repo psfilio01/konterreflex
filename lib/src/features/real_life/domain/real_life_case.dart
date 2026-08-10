@@ -99,6 +99,8 @@ class RealLifeReconstruction {
   factory RealLifeReconstruction.fromJson(
     Map<String, dynamic> json, {
     required String id,
+    String title = 'Deine echte Situation',
+    String category = 'Echte Situation',
   }) {
     final rawCharacters = json['characters'];
     final rawTurns = json['turns'];
@@ -140,8 +142,8 @@ class RealLifeReconstruction {
     return RealLifeReconstruction(
       scenario: TrainingScenario(
         id: id,
-        title: 'Deine echte Situation',
-        category: 'Echte Situation',
+        title: title,
+        category: category,
         moderatorIntro: _text(json, 'moderator_intro'),
         characters: characters,
         turns: turns,

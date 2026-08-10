@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:konterreflex/src/core/routing/app_router.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
@@ -13,7 +14,7 @@ class TrainingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scenarios = ref.watch(approvedScenariosProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Training')),
+      appBar: AppBar(title: Text(context.l10n.trainingTitle)),
       body: SafeArea(
         child: scenarios.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -23,11 +24,11 @@ class TrainingScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Die Szenarien konnten nicht geladen werden.'),
+                  Text(context.l10n.scenariosLoadError),
                   const SizedBox(height: AppSpacing.md),
                   OutlinedButton(
                     onPressed: () => ref.invalidate(approvedScenariosProvider),
-                    child: const Text('Erneut versuchen'),
+                    child: Text(context.l10n.retry),
                   ),
                 ],
               ),
@@ -48,7 +49,7 @@ class _ScenarioList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (scenarios.isEmpty) {
-      return const Center(child: Text('Noch keine freigegebenen Szenarien.'));
+      return Center(child: Text(context.l10n.noApprovedScenarios));
     }
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -70,7 +71,7 @@ class _ScenarioList extends StatelessWidget {
             ),
             title: Text(scenario.title),
             subtitle: Text(
-              '${scenario.category} · ${scenario.isGroup ? 'Gruppe' : '1:1'}',
+              '${scenario.category} · ${scenario.isGroup ? context.l10n.groupLabel : '1:1'}',
             ),
             trailing: const Icon(Icons.arrow_forward_rounded),
             onTap: () => context.pushNamed(

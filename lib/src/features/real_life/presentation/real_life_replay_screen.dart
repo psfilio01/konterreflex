@@ -5,6 +5,8 @@ import 'package:konterreflex/src/core/audio/permission_handler_microphone.dart';
 import 'package:konterreflex/src/core/audio/record_voice_recorder.dart';
 import 'package:konterreflex/src/core/audio/supabase_speech_gateway.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
+import 'package:konterreflex/src/core/localization/localization_providers.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/real_life/application/real_life_providers.dart';
 import 'package:konterreflex/src/features/real_life/application/real_life_replay_controller.dart';
@@ -29,14 +31,16 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
   void initState() {
     super.initState();
     final client = ref.read(supabaseClientProvider);
+    final language = ref.read(appLanguageProvider);
     _controller = RealLifeReplayController(
       permission: PermissionHandlerMicrophone(),
       recorder: RecordVoiceRecorder(),
       playback: JustAudioPlaybackQueue(),
-      speech: SupabaseSpeechGateway(client),
+      speech: SupabaseSpeechGateway(client, language: language),
       ai: ref.read(realLifeAiServiceProvider),
       repository: ref.read(realLifeRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
+      strings: ref.read(appLocalizationsProvider),
     );
   }
 
@@ -49,7 +53,7 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Echte Situation')),
+      appBar: AppBar(title: Text(context.l10n.realLifeTitle)),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: _controller,
@@ -105,29 +109,34 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
   }
 
   String _title(RealLifeReplayStatus status) => switch (status) {
-        RealLifeReplayStatus.ready => 'Was ist passiert?',
-        RealLifeReplayStatus.describing => 'Erzähl in deinem Tempo',
-        RealLifeReplayStatus.extracting => 'Situation wird verstanden …',
+        RealLifeReplayStatus.ready => context.l10n.realLifeReadyTitle,
+        RealLifeReplayStatus.describing => context.l10n.realLifeDescribingTitle,
+        RealLifeReplayStatus.extracting => context.l10n.realLifeExtractingTitle,
         RealLifeReplayStatus.confirmExtraction =>
-          'Passt diese Zusammenfassung?',
-        RealLifeReplayStatus.recordingFollowUp => 'Ergänze nur das Wesentliche',
-        RealLifeReplayStatus.reconstructing => 'Szene wird rekonstruiert …',
-        RealLifeReplayStatus.readyToReplay => 'Bereit für den zweiten Versuch?',
-        RealLifeReplayStatus.playing => 'Hör dir die Szene an',
-        RealLifeReplayStatus.awaitingResponse => 'Wie antwortest du jetzt?',
-        RealLifeReplayStatus.recordingResponse => 'Du sprichst',
-        RealLifeReplayStatus.processingResponse => 'Antwort wird reflektiert …',
-        RealLifeReplayStatus.feedbackReady => 'Dein Feedback',
-        RealLifeReplayStatus.error => 'Das hat noch nicht geklappt',
+          context.l10n.realLifeConfirmTitle,
+        RealLifeReplayStatus.recordingFollowUp =>
+          context.l10n.realLifeFollowUpTitle,
+        RealLifeReplayStatus.reconstructing =>
+          context.l10n.realLifeReconstructingTitle,
+        RealLifeReplayStatus.readyToReplay =>
+          context.l10n.realLifeReplayReadyTitle,
+        RealLifeReplayStatus.playing => context.l10n.realLifePlayingTitle,
+        RealLifeReplayStatus.awaitingResponse =>
+          context.l10n.realLifeResponseTitle,
+        RealLifeReplayStatus.recordingResponse =>
+          context.l10n.realLifeRecordingTitle,
+        RealLifeReplayStatus.processingResponse =>
+          context.l10n.realLifeReflectingTitle,
+        RealLifeReplayStatus.feedbackReady =>
+          context.l10n.realLifeFeedbackTitle,
+        RealLifeReplayStatus.error => context.l10n.realLifeErrorTitle,
       };
 
   String _subtitle(RealLifeReplayStatus status) => switch (status) {
-        RealLifeReplayStatus.ready =>
-          'Beschreibe Ort, Beteiligte und den entscheidenden Satz. Tippen ist nicht nötig.',
+        RealLifeReplayStatus.ready => context.l10n.realLifeReadyBody,
         RealLifeReplayStatus.confirmExtraction =>
-          'Du kannst bestätigen oder eine wesentliche Lücke per Stimme ergänzen.',
-        RealLifeReplayStatus.feedbackReady =>
-          'Wiederhole die Szene oder übe eine ähnliche Variante.',
+          context.l10n.realLifeConfirmBody,
+        RealLifeReplayStatus.feedbackReady => context.l10n.realLifeFeedbackBody,
         _ => '',
       };
 }
@@ -145,23 +154,24 @@ class _ExtractionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Detail(label: 'Ort und Rahmen', value: extraction.setting),
             _Detail(
-              label: 'Beteiligte',
+                label: context.l10n.settingDetail, value: extraction.setting),
+            _Detail(
+              label: context.l10n.participantsDetail,
               value: extraction.participants
                   .map((person) => '${person.name} · ${person.relationship}')
                   .join(', '),
             ),
             _Detail(
-              label: 'Entscheidender Satz',
+              label: context.l10n.triggerStatementDetail,
               value: extraction.triggerStatement,
             ),
             _Detail(
-              label: 'Beobachtbarer Ton',
+              label: context.l10n.observableToneDetail,
               value: extraction.observableTone,
             ),
             _Detail(
-              label: 'Soziale Spannung',
+              label: context.l10n.socialTensionDetail,
               value: extraction.emotionalSocialTension,
             ),
           ],
@@ -186,7 +196,7 @@ class _Detail extends StatelessWidget {
         children: [
           Text(label, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: AppSpacing.xs),
-          Text(value.isEmpty ? 'Nicht sicher' : value),
+          Text(value.isEmpty ? context.l10n.notSure : value),
         ],
       ),
     );
@@ -204,12 +214,12 @@ class _Actions extends StatelessWidget {
       RealLifeReplayStatus.ready => FilledButton.icon(
           onPressed: controller.startDescription,
           icon: const Icon(Icons.mic_none_rounded),
-          label: const Text('Situation erzählen'),
+          label: Text(context.l10n.tellSituation),
         ),
       RealLifeReplayStatus.describing => FilledButton.icon(
           onPressed: controller.finishDescription,
           icon: const Icon(Icons.stop_rounded),
-          label: const Text('Erzählung beenden'),
+          label: Text(context.l10n.finishStory),
         ),
       RealLifeReplayStatus.confirmExtraction => Wrap(
           spacing: AppSpacing.sm,
@@ -218,34 +228,34 @@ class _Actions extends StatelessWidget {
           children: [
             FilledButton(
               onPressed: controller.confirmAndReconstruct,
-              child: const Text('Passt · Szene erstellen'),
+              child: Text(context.l10n.confirmCreateScene),
             ),
             if (controller.nextEssentialQuestion != null)
               OutlinedButton.icon(
                 onPressed: controller.startEssentialFollowUp,
                 icon: const Icon(Icons.mic_none_rounded),
-                label: const Text('Per Stimme ergänzen'),
+                label: Text(context.l10n.addByVoice),
               ),
           ],
         ),
       RealLifeReplayStatus.recordingFollowUp => FilledButton(
           onPressed: controller.finishEssentialFollowUp,
-          child: const Text('Ergänzung übernehmen'),
+          child: Text(context.l10n.acceptAddition),
         ),
       RealLifeReplayStatus.readyToReplay => FilledButton.icon(
           onPressed: controller.playReplay,
           icon: const Icon(Icons.play_arrow_rounded),
-          label: const Text('Szene abspielen'),
+          label: Text(context.l10n.playScene),
         ),
       RealLifeReplayStatus.awaitingResponse => FilledButton.icon(
           onPressed: controller.startResponse,
           icon: const Icon(Icons.mic_none_rounded),
-          label: const Text('Neu antworten'),
+          label: Text(context.l10n.answerAgain),
         ),
       RealLifeReplayStatus.recordingResponse => FilledButton.icon(
           onPressed: controller.finishResponse,
           icon: const Icon(Icons.stop_rounded),
-          label: const Text('Antwort beenden'),
+          label: Text(context.l10n.finishAnswer),
         ),
       RealLifeReplayStatus.feedbackReady => Wrap(
           spacing: AppSpacing.sm,
@@ -255,17 +265,17 @@ class _Actions extends StatelessWidget {
             FilledButton.icon(
               onPressed: controller.repeatReplay,
               icon: const Icon(Icons.replay_rounded),
-              label: const Text('Gleiche Szene wiederholen'),
+              label: Text(context.l10n.repeatSameScene),
             ),
             OutlinedButton(
               onPressed: controller.createSimilarVariation,
-              child: const Text('Ähnliche Variante'),
+              child: Text(context.l10n.similarVariation),
             ),
           ],
         ),
       RealLifeReplayStatus.error => OutlinedButton(
           onPressed: controller.reset,
-          child: const Text('Neu beginnen'),
+          child: Text(context.l10n.startOver),
         ),
       _ => const SizedBox.shrink(),
     };

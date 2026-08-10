@@ -69,7 +69,10 @@ export function createAiGatewayHandler(
       const aiRequest = await parseRequest(request);
       const definition = taskRegistry[aiRequest.task];
       const provider = dependencies.providers.get(dependencies.providerId);
-      const prompt = await dependencies.loadPrompt(definition);
+      const prompt = withResponseLanguage(
+        await dependencies.loadPrompt(definition),
+        aiRequest.responseLanguage,
+      );
 
       const result = await runWithTimeout(
         (signal) =>
@@ -148,11 +151,22 @@ async function parseRequest(request: Request): Promise<AiRequest> {
     !isRecord(body) ||
     body.schemaVersion !== "1" ||
     !isAiTask(body.task) ||
-    !isRecord(body.payload)
+    !isRecord(body.payload) ||
+    (body.responseLanguage != null &&
+      body.responseLanguage !== "de" &&
+      body.responseLanguage !== "en")
   ) {
     throw new GatewayError("invalid_request", 400, "Ungültige Anfrage.");
   }
-  return body as unknown as AiRequest;
+  return {
+    ...body,
+    responseLanguage: body.responseLanguage === "en" ? "en" : "de",
+  } as unknown as AiRequest;
+}
+
+function withResponseLanguage(prompt: string, language: "de" | "en"): string {
+  const languageName = language === "en" ? "English" : "German";
+  return `${prompt}\n\n# Required response language\nWrite every user-facing text value in ${languageName}. Keep JSON keys unchanged. Do not translate quoted user input, names, or schema keys. Preserve the qualitative, non-numerical feedback and all safety rules.`;
 }
 
 async function runWithTimeout<T>(

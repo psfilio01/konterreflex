@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/auth/data/auth_repository.dart';
 import 'package:konterreflex/src/features/auth/domain/auth_credentials.dart';
@@ -39,12 +40,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     FocusScope.of(context).unfocus();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final validationError = validateEmail(email) ??
-        validatePassword(password) ??
+    final l10n = context.l10n;
+    final validationError = validateEmail(email, strings: l10n) ??
+        validatePassword(password, strings: l10n) ??
         (_isSignUp
             ? validatePasswordConfirmation(
                 password,
                 _passwordConfirmationController.text,
+                strings: l10n,
               )
             : null);
     if (validationError != null) {
@@ -69,9 +72,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _showMessage(
         authErrorMessageFor(
           action.error!,
-          fallback: _isSignUp
-              ? 'Das Konto konnte nicht erstellt werden.'
-              : 'Die Anmeldung ist fehlgeschlagen.',
+          fallback: _isSignUp ? l10n.signUpError : l10n.signInError,
+          strings: l10n,
         ),
       );
       return;
@@ -82,12 +84,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _passwordConfirmationController.clear();
       setState(() => _mode = _AuthMode.signIn);
       _showMessage(
-        'Konto erstellt. Bitte bestätige deine E-Mail-Adresse und melde dich danach an.',
+        l10n.accountCreatedConfirmation,
       );
     }
   }
 
   Future<void> _signInWithProvider({required bool apple}) async {
+    final l10n = context.l10n;
     final controller = ref.read(authActionControllerProvider.notifier);
     if (apple) {
       await controller.signInWithApple();
@@ -100,9 +103,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       _showMessage(
         authErrorMessageFor(
           action.error!,
-          fallback: apple
-              ? 'Die Anmeldung mit Apple ist fehlgeschlagen.'
-              : 'Die Anmeldung mit Google ist fehlgeschlagen.',
+          fallback: apple ? l10n.appleSignInError : l10n.googleSignInError,
+          strings: l10n,
         ),
       );
     }
@@ -116,6 +118,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final action = ref.watch(authActionControllerProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -136,15 +139,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     Text(
-                      _isSignUp ? 'Konto erstellen' : 'Willkommen zurück',
+                      _isSignUp ? l10n.createAccount : l10n.welcomeBack,
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      _isSignUp
-                          ? 'Erstelle dein Konterreflex-Konto mit E-Mail und Passwort.'
-                          : 'Melde dich an und setze dein Training fort.',
+                      _isSignUp ? l10n.signUpIntro : l10n.signInIntro,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -157,9 +158,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         AutofillHints.email,
                       ],
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'E-Mail-Adresse',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.emailAddress,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -179,16 +180,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         if (!_isSignUp) _submit();
                       },
                       decoration: InputDecoration(
-                        labelText: 'Passwort',
-                        helperText: _isSignUp ? 'Mindestens 8 Zeichen' : null,
+                        labelText: l10n.password,
+                        helperText: _isSignUp ? l10n.passwordMinimumHint : null,
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           onPressed: () => setState(
                             () => _obscurePassword = !_obscurePassword,
                           ),
                           tooltip: _obscurePassword
-                              ? 'Passwort anzeigen'
-                              : 'Passwort verbergen',
+                              ? l10n.showPassword
+                              : l10n.hidePassword,
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_outlined
@@ -207,7 +208,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         textInputAction: TextInputAction.done,
                         onSubmitted: (_) => _submit(),
                         decoration: InputDecoration(
-                          labelText: 'Passwort wiederholen',
+                          labelText: l10n.repeatPassword,
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
                             onPressed: () => setState(
@@ -215,8 +216,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   _obscureConfirmation = !_obscureConfirmation,
                             ),
                             tooltip: _obscureConfirmation
-                                ? 'Passwort anzeigen'
-                                : 'Passwort verbergen',
+                                ? l10n.showPassword
+                                : l10n.hidePassword,
                             icon: Icon(
                               _obscureConfirmation
                                   ? Icons.visibility_outlined
@@ -240,7 +241,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                       ),
                                     ),
                                   ),
-                          child: const Text('Passwort vergessen?'),
+                          child: Text(l10n.forgotPassword),
                         ),
                       )
                     else
@@ -249,21 +250,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       onPressed: action.isLoading ? null : _submit,
                       child: Text(
                         action.isLoading
-                            ? 'Bitte warten …'
+                            ? l10n.pleaseWait
                             : _isSignUp
-                                ? 'Konto erstellen'
-                                : 'Anmelden',
+                                ? l10n.createAccount
+                                : l10n.signIn,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    const Row(
+                    Row(
                       children: [
-                        Expanded(child: Divider()),
+                        const Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('oder'),
+                          child: Text(l10n.or),
                         ),
-                        Expanded(child: Divider()),
+                        const Expanded(child: Divider()),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -272,7 +273,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           ? null
                           : () => _signInWithProvider(apple: false),
                       icon: const Icon(Icons.account_circle_outlined),
-                      label: const Text('Mit Google fortfahren'),
+                      label: Text(l10n.continueWithGoogle),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     OutlinedButton.icon(
@@ -280,7 +281,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           ? null
                           : () => _signInWithProvider(apple: true),
                       icon: const Icon(Icons.apple),
-                      label: const Text('Mit Apple fortfahren'),
+                      label: Text(l10n.continueWithApple),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     TextButton(
@@ -296,9 +297,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               });
                             },
                       child: Text(
-                        _isSignUp
-                            ? 'Du hast schon ein Konto? Anmelden'
-                            : 'Noch kein Konto? Jetzt registrieren',
+                        _isSignUp ? l10n.alreadyHaveAccount : l10n.needAccount,
                       ),
                     ),
                   ],

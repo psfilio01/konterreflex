@@ -4,12 +4,15 @@ import 'package:konterreflex/src/features/golden_book/domain/golden_book_entry.d
 
 class GoldenBookCaptureService {
   GoldenBookCaptureService(
-      {required AiGateway ai, required GoldenBookRepository repository})
+      {required AiGateway ai,
+      required GoldenBookRepository repository,
+      this.directSaveCategory = 'Persönlicher Favorit'})
       : _ai = ai,
         _repository = repository;
 
   final AiGateway _ai;
   final GoldenBookRepository _repository;
+  final String directSaveCategory;
 
   Future<GoldenBookCaptureResult> resolveCommand({
     required String command,
@@ -48,6 +51,6 @@ class GoldenBookCaptureService {
           {String? sourceSessionId}) =>
       _repository.save(
           phrase: phrase,
-          category: 'Persönlicher Favorit',
+          category: directSaveCategory,
           sourceSessionId: sourceSessionId);
 }

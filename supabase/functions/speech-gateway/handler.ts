@@ -70,7 +70,8 @@ export function createSpeechGatewayHandler(
           text.trim().length === 0 ||
           text.length > 1_500 ||
           !isVoiceRole(role) ||
-          (body.voiceId != null && typeof body.voiceId !== "string")
+          (body.voiceId != null && typeof body.voiceId !== "string") ||
+          (body.languageCode != null && !isLanguageCode(body.languageCode))
         ) {
           throw new GatewayError(
             "invalid_request",
@@ -89,6 +90,7 @@ export function createSpeechGatewayHandler(
               voiceId: typeof body.voiceId === "string"
                 ? body.voiceId
                 : undefined,
+              languageCode: body.languageCode === "en" ? "en" : "de",
             }, signal),
           timeoutMs,
         );
@@ -107,7 +109,7 @@ export function createSpeechGatewayHandler(
           typeof body.audioBase64 !== "string" ||
           body.audioBase64.length > 8_000_000 ||
           typeof body.mimeType !== "string" ||
-          (body.languageCode != null && typeof body.languageCode !== "string")
+          (body.languageCode != null && !isLanguageCode(body.languageCode))
         ) {
           throw new GatewayError("invalid_request", 400, "Ungültige Aufnahme.");
         }
@@ -127,9 +129,7 @@ export function createSpeechGatewayHandler(
             provider.transcribe({
               audio,
               mimeType: body.mimeType as string,
-              languageCode: typeof body.languageCode === "string"
-                ? body.languageCode
-                : undefined,
+              languageCode: body.languageCode === "en" ? "en" : "de",
             }, signal),
           timeoutMs,
         );
@@ -183,6 +183,10 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 
 function isVoiceRole(value: unknown): value is VoiceRole {
   return typeof value === "string" && voiceRoles.some((role) => role === value);
+}
+
+function isLanguageCode(value: unknown): value is "de" | "en" {
+  return value === "de" || value === "en";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
