@@ -147,7 +147,14 @@ export function createSpeechGatewayHandler(
         "Unbekannte Sprachoperation.",
       );
     } catch (error) {
-      return errorResponse(requestId, safeError(error));
+      const safe = safeError(error);
+      console.warn(JSON.stringify({
+        event: "speech_gateway_failed",
+        requestId,
+        code: safe.code,
+        status: safe.status,
+      }));
+      return errorResponse(requestId, safe);
     }
   };
 }

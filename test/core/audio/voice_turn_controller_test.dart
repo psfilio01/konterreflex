@@ -96,6 +96,46 @@ void main() {
     expect(playback.stopped, isTrue);
   });
 
+  test('a speech gateway failure stays retryable and exposes a safe code',
+      () async {
+    final controller = VoiceTurnController(
+      permission: _MockPermission(MicrophonePermissionStatus.granted),
+      recorder: _MockRecorder(),
+      playback: _MockPlayback(),
+      speech: _FailingSpeech(
+        const VoiceServiceException(
+          VoiceServiceFailureKind.authentication,
+          'SPEECH_AUTH',
+        ),
+      ),
+    );
+
+    final played = await controller.playScene(const [
+      SpeechLine(text: 'Deine Situation.', role: VoiceRole.moderator),
+    ]);
+
+    expect(played, isFalse);
+    expect(controller.snapshot.state, VoiceTurnState.awaitingUser);
+    expect(controller.snapshot.message, contains('SPEECH_AUTH'));
+    expect(controller.snapshot.message, isNot(contains('Deine Situation')));
+  });
+
+  test('a device playback failure is distinguishable from synthesis', () async {
+    final controller = VoiceTurnController(
+      permission: _MockPermission(MicrophonePermissionStatus.granted),
+      recorder: _MockRecorder(),
+      playback: _FailingPlayback(),
+      speech: _MockSpeech(),
+    );
+
+    final played = await controller.playScene(const [
+      SpeechLine(text: 'Deine Situation.', role: VoiceRole.moderator),
+    ]);
+
+    expect(played, isFalse);
+    expect(controller.snapshot.message, contains('AUDIO_PLAYBACK'));
+  });
+
   test('state machine rejects steps outside the voice contract', () {
     final machine = VoiceStateMachine();
     expect(
@@ -176,4 +216,27 @@ class _MockSpeech implements SpeechGateway {
       model: 'mock-stt',
     );
   }
+}
+
+class _FailingSpeech implements SpeechGateway {
+  _FailingSpeech(this.failure);
+
+  final VoiceServiceException failure;
+
+  @override
+  Future<SpeechClip> synthesize(SpeechLine line) => Future.error(failure);
+
+  @override
+  Future<TranscriptionResult> transcribe(RecordedAudio audio) =>
+      Future.error(failure);
+}
+
+class _FailingPlayback extends _MockPlayback {
+  @override
+  Future<void> playAll() => Future.error(
+        const VoiceServiceException(
+          VoiceServiceFailureKind.playback,
+          'AUDIO_PLAYBACK',
+        ),
+      );
 }

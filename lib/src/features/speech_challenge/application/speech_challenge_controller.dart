@@ -82,9 +82,11 @@ class SpeechChallengeController extends ChangeNotifier {
   Future<bool> _runPrompt(ChallengePrompt prompt) async {
     _voice.reset();
     _setStatus(SpeechChallengeStatus.playing);
-    await _voice.playScene([prompt.speechLine]);
-    if (_voice.snapshot.state != VoiceTurnState.awaitingUser) {
-      _setError('Der Impuls konnte nicht abgespielt werden.');
+    final played = await _voice.playScene([prompt.speechLine]);
+    if (!played || _voice.snapshot.state != VoiceTurnState.awaitingUser) {
+      _setError(
+        _voice.snapshot.message ?? 'Der Impuls konnte nicht abgespielt werden.',
+      );
       return false;
     }
     _setStatus(SpeechChallengeStatus.listening);

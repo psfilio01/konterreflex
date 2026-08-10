@@ -1,5 +1,25 @@
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 
+enum VoiceServiceFailureKind {
+  authentication,
+  request,
+  timeout,
+  unavailable,
+  invalidResponse,
+  playback,
+}
+
+/// A privacy-safe failure passed across the speech provider boundary.
+///
+/// The diagnostic code must never contain transcripts, audio, provider
+/// responses or credentials. It is safe to show in the UI and device logs.
+class VoiceServiceException implements Exception {
+  const VoiceServiceException(this.kind, this.diagnosticCode);
+
+  final VoiceServiceFailureKind kind;
+  final String diagnosticCode;
+}
+
 enum MicrophonePermissionStatus {
   granted,
   denied,

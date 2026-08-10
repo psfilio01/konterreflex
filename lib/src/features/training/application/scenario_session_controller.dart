@@ -90,11 +90,14 @@ class ScenarioSessionController extends ChangeNotifier {
             AnalyticsOutcome.started);
       }
       _setStatus(ScenarioSessionStatus.playing);
-      await _voice.playScene(scenario.speechLines);
-      if (_voice.snapshot.state == VoiceTurnState.awaitingUser) {
+      final played = await _voice.playScene(scenario.speechLines);
+      if (played && _voice.snapshot.state == VoiceTurnState.awaitingUser) {
         _setStatus(ScenarioSessionStatus.awaitingResponse);
       } else {
-        _setError('Die Szene konnte nicht vollständig abgespielt werden.');
+        _setError(
+          _voice.snapshot.message ??
+              'Die Szene konnte nicht vollständig abgespielt werden.',
+        );
       }
     } catch (_) {
       _setError('Die Trainingseinheit konnte nicht gestartet werden.');

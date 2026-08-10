@@ -42,7 +42,7 @@ class VoiceTurnController extends ChangeNotifier {
 
   VoiceTurnSnapshot get snapshot => _snapshot;
 
-  Future<void> playScene(List<SpeechLine> lines) async {
+  Future<bool> playScene(List<SpeechLine> lines) async {
     if (lines.isEmpty || lines.first.role != VoiceRole.moderator) {
       throw ArgumentError('A voice scene starts with a moderator line.');
     }
@@ -50,7 +50,7 @@ class VoiceTurnController extends ChangeNotifier {
     _moveTo(VoiceTurnState.introducing);
     try {
       for (final line in lines) {
-        if (operation != _operation) return;
+        if (operation != _operation) return false;
         if (line.role == VoiceRole.actor &&
             _machine.state != VoiceTurnState.acting) {
           _moveTo(VoiceTurnState.acting);
@@ -59,12 +59,36 @@ class VoiceTurnController extends ChangeNotifier {
       }
       await _playback.playAll();
       if (operation == _operation) _moveTo(VoiceTurnState.awaitingUser);
-    } catch (_) {
+      return operation == _operation;
+    } catch (error) {
       if (operation == _operation) {
         _machine.interrupt();
-        _publish(message: 'Die Szene konnte nicht abgespielt werden.');
+        _publish(message: _sceneFailureMessage(error));
       }
+      return false;
     }
+  }
+
+  String _sceneFailureMessage(Object error) {
+    if (error is! VoiceServiceException) {
+      debugPrint('[voice] scene_failed code=VOICE_UNKNOWN');
+      return 'Die Szene konnte nicht abgespielt werden (VOICE_UNKNOWN).';
+    }
+    debugPrint('[voice] scene_failed code=${error.diagnosticCode}');
+    return switch (error.kind) {
+      VoiceServiceFailureKind.authentication =>
+        'Die Audio-Anmeldung ist abgelaufen. Bitte melde dich erneut an (${error.diagnosticCode}).',
+      VoiceServiceFailureKind.request =>
+        'Die Sprachanfrage wurde abgelehnt (${error.diagnosticCode}).',
+      VoiceServiceFailureKind.timeout =>
+        'Die Sprachausgabe hat zu lange gebraucht. Bitte versuche es erneut (${error.diagnosticCode}).',
+      VoiceServiceFailureKind.unavailable =>
+        'Die Sprachausgabe ist gerade nicht erreichbar (${error.diagnosticCode}).',
+      VoiceServiceFailureKind.invalidResponse =>
+        'Die empfangenen Audiodaten waren ungültig (${error.diagnosticCode}).',
+      VoiceServiceFailureKind.playback =>
+        'Das iPhone konnte die Audiodatei nicht wiedergeben (${error.diagnosticCode}).',
+    };
   }
 
   Future<MicrophonePermissionStatus> startRecording() async {

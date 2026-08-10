@@ -25,11 +25,18 @@ class JustAudioPlaybackQueue implements AudioPlaybackQueue {
     try {
       while (_pending.isNotEmpty && generation == _generation) {
         final clip = _pending.removeFirst();
-        await _player.setAudioSource(
-          _BytesAudioSource(clip.bytes, clip.mimeType),
-        );
-        if (generation != _generation) return;
-        await _player.play();
+        try {
+          await _player.setAudioSource(
+            _BytesAudioSource(clip.bytes, clip.mimeType),
+          );
+          if (generation != _generation) return;
+          await _player.play();
+        } catch (_) {
+          throw const VoiceServiceException(
+            VoiceServiceFailureKind.playback,
+            'AUDIO_PLAYBACK',
+          );
+        }
       }
     } finally {
       _playing = false;

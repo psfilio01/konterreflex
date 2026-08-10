@@ -73,6 +73,26 @@ void main() {
       'voice-b',
     ]);
   });
+
+  test('scene playback failure offers a retry instead of recording', () async {
+    final controller = ScenarioSessionController(
+      scenario: testScenario,
+      repository: _MemoryScenarioRepository(),
+      feedbackRepository: _FeedbackRepository(),
+      voice: VoiceTurnController(
+        permission: _Permission(),
+        recorder: _Recorder(),
+        playback: _Playback(),
+        speech: _FailingSpeech(),
+      ),
+      createId: () => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    );
+
+    await controller.start();
+
+    expect(controller.status, ScenarioSessionStatus.error);
+    expect(controller.message, contains('SPEECH_SERVICE'));
+  });
 }
 
 const testScenario = TrainingScenario(
@@ -228,5 +248,23 @@ class _Speech implements SpeechGateway {
         transcript: 'Meine klare Antwort.',
         provider: 'mock',
         model: 'mock',
+      );
+}
+
+class _FailingSpeech implements SpeechGateway {
+  @override
+  Future<SpeechClip> synthesize(SpeechLine line) => Future.error(
+        const VoiceServiceException(
+          VoiceServiceFailureKind.unavailable,
+          'SPEECH_SERVICE',
+        ),
+      );
+
+  @override
+  Future<TranscriptionResult> transcribe(RecordedAudio audio) => Future.error(
+        const VoiceServiceException(
+          VoiceServiceFailureKind.unavailable,
+          'SPEECH_SERVICE',
+        ),
       );
 }
