@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
-import 'package:konterreflex/src/features/auth/data/auth_deep_link.dart';
+import 'package:konterreflex/src/features/auth/data/auth_repository.dart';
+import 'package:konterreflex/src/features/auth/domain/auth_credentials.dart';
 import 'package:konterreflex/src/features/auth/domain/auth_error_messages.dart';
+import 'package:konterreflex/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
+
+enum _AuthMode { signIn, signUp }
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -16,108 +19,99 @@ class SignInScreen extends ConsumerStatefulWidget {
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _emailController = TextEditingController();
-  final _linkController = TextEditingController();
-  bool _linkSent = false;
-  AuthDeepLinkCoordinator? _deepLinks;
-  VoidCallback? _deepLinkErrorListener;
+  final _passwordController = TextEditingController();
+  final _passwordConfirmationController = TextEditingController();
+  _AuthMode _mode = _AuthMode.signIn;
+  bool _obscurePassword = true;
+  bool _obscureConfirmation = true;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      try {
-        final deepLinks = ref.read(authDeepLinkCoordinatorProvider);
-        _deepLinks = deepLinks;
-        void onError() {
-          final message = deepLinks.lastError.value;
-          if (message == null || !mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
-          deepLinks.lastError.value = null;
-        }
-
-        deepLinks.lastError.addListener(onError);
-        _deepLinkErrorListener = onError;
-        onError();
-      } catch (error) {
-        debugPrint('Sign-in deep-link wiring skipped: $error');
-      }
-    });
-  }
+  bool get _isSignUp => _mode == _AuthMode.signUp;
 
   @override
   void dispose() {
-    final listener = _deepLinkErrorListener;
-    final deepLinks = _deepLinks;
-    if (listener != null && deepLinks != null) {
-      deepLinks.lastError.removeListener(listener);
-    }
     _emailController.dispose();
-    _linkController.dispose();
+    _passwordController.dispose();
+    _passwordConfirmationController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendLink() async {
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
     final email = _emailController.text.trim();
-    if (!email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bitte gib eine gültige E-Mail-Adresse ein.'),
+    final password = _passwordController.text;
+    final validationError = validateEmail(email) ??
+        validatePassword(password) ??
+        (_isSignUp
+            ? validatePasswordConfirmation(
+                password,
+                _passwordConfirmationController.text,
+              )
+            : null);
+    if (validationError != null) {
+      _showMessage(validationError);
+      return;
+    }
+
+    final controller = ref.read(authActionControllerProvider.notifier);
+    RegistrationOutcome? outcome;
+    if (_isSignUp) {
+      outcome = await controller.signUpWithPassword(
+        email: email,
+        password: password,
+      );
+    } else {
+      await controller.signInWithPassword(email: email, password: password);
+    }
+    if (!mounted) return;
+
+    final action = ref.read(authActionControllerProvider);
+    if (action.hasError) {
+      _showMessage(
+        authErrorMessageFor(
+          action.error!,
+          fallback: _isSignUp
+              ? 'Das Konto konnte nicht erstellt werden.'
+              : 'Die Anmeldung ist fehlgeschlagen.',
         ),
       );
       return;
     }
 
-    await ref.read(authActionControllerProvider.notifier).sendSignInOtp(email);
-    if (!mounted) return;
-    final result = ref.read(authActionControllerProvider);
-    if (result.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            authErrorMessageFor(
-              result.error!,
-              fallback: 'Der Anmeldelink konnte nicht gesendet werden.',
-            ),
-          ),
-        ),
+    if (outcome == RegistrationOutcome.emailConfirmationRequired) {
+      _passwordController.clear();
+      _passwordConfirmationController.clear();
+      setState(() => _mode = _AuthMode.signIn);
+      _showMessage(
+        'Konto erstellt. Bitte bestätige deine E-Mail-Adresse und melde dich danach an.',
       );
-      return;
     }
-    setState(() => _linkSent = true);
   }
 
-  Future<void> _completeFromPastedLink() async {
-    final link = _linkController.text.trim();
-    if (link.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bitte füge den Link aus der E-Mail ein.'),
-        ),
-      );
-      return;
+  Future<void> _signInWithProvider({required bool apple}) async {
+    final controller = ref.read(authActionControllerProvider.notifier);
+    if (apple) {
+      await controller.signInWithApple();
+    } else {
+      await controller.signInWithGoogle();
     }
-
-    await ref
-        .read(authActionControllerProvider.notifier)
-        .completeSignInFromEmailLink(link);
     if (!mounted) return;
-    final result = ref.read(authActionControllerProvider);
-    if (result.hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            authErrorMessageFor(
-              result.error!,
-              fallback:
-                  'Anmeldung fehlgeschlagen. Link nicht öffnen – neu anfordern, kopieren und hier einfügen.',
-            ),
-          ),
+    final action = ref.read(authActionControllerProvider);
+    if (action.hasError) {
+      _showMessage(
+        authErrorMessageFor(
+          action.error!,
+          fallback: apple
+              ? 'Die Anmeldung mit Apple ist fehlgeschlagen.'
+              : 'Die Anmeldung mit Google ist fehlgeschlagen.',
         ),
       );
     }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -128,98 +122,187 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const IntelligenceOrb(size: 112),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Willkommen bei Konterreflex',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _linkSent
-                        ? 'Öffne den Link nicht. Tippe in der Mail lange auf den Link, kopiere ihn und füge ihn hier ein.'
-                        : 'Du erhältst einen sicheren Anmeldelink per E-Mail – ohne Passwort.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  TextField(
-                    controller: _emailController,
-                    enabled: !action.isLoading && !_linkSent,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (!_linkSent) _sendLink();
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'E-Mail-Adresse',
-                      border: OutlineInputBorder(),
+              child: AutofillGroup(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Align(
+                      alignment: Alignment.center,
+                      child: IntelligenceOrb(size: 112),
                     ),
-                  ),
-                  if (_linkSent) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      _isSignUp ? 'Konto erstellen' : 'Willkommen zurück',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _isSignUp
+                          ? 'Erstelle dein Konterreflex-Konto mit E-Mail und Passwort.'
+                          : 'Melde dich an und setze dein Training fort.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
                     TextField(
-                      controller: _linkController,
+                      controller: _emailController,
                       enabled: !action.isLoading,
-                      keyboardType: TextInputType.url,
-                      textInputAction: TextInputAction.done,
-                      minLines: 2,
-                      maxLines: 4,
-                      onSubmitted: (_) => _completeFromPastedLink(),
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [
+                        AutofillHints.username,
+                        AutofillHints.email,
+                      ],
+                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        labelText: 'Kopierter Anmeldelink',
+                        labelText: 'E-Mail-Adresse',
                         border: OutlineInputBorder(),
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: action.isLoading
-                        ? null
-                        : (_linkSent ? _completeFromPastedLink : _sendLink),
-                    child: Text(
-                      action.isLoading
-                          ? 'Bitte warten …'
-                          : _linkSent
-                              ? 'Mit Link anmelden'
-                              : 'Anmeldelink senden',
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: _passwordController,
+                      enabled: !action.isLoading,
+                      obscureText: _obscurePassword,
+                      autofillHints: [
+                        _isSignUp
+                            ? AutofillHints.newPassword
+                            : AutofillHints.password,
+                      ],
+                      textInputAction: _isSignUp
+                          ? TextInputAction.next
+                          : TextInputAction.done,
+                      onSubmitted: (_) {
+                        if (!_isSignUp) _submit();
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Passwort',
+                        helperText: _isSignUp ? 'Mindestens 8 Zeichen' : null,
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                          tooltip: _obscurePassword
+                              ? 'Passwort anzeigen'
+                              : 'Passwort verbergen',
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  if (_linkSent) ...[
-                    const SizedBox(height: 12),
-                    TextButton(
+                    if (_isSignUp) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      TextField(
+                        controller: _passwordConfirmationController,
+                        enabled: !action.isLoading,
+                        obscureText: _obscureConfirmation,
+                        autofillHints: const [AutofillHints.newPassword],
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _submit(),
+                        decoration: InputDecoration(
+                          labelText: 'Passwort wiederholen',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                              () =>
+                                  _obscureConfirmation = !_obscureConfirmation,
+                            ),
+                            tooltip: _obscureConfirmation
+                                ? 'Passwort anzeigen'
+                                : 'Passwort verbergen',
+                            icon: Icon(
+                              _obscureConfirmation
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (!_isSignUp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: action.isLoading
+                              ? null
+                              : () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => ForgotPasswordScreen(
+                                        initialEmail:
+                                            _emailController.text.trim(),
+                                      ),
+                                    ),
+                                  ),
+                          child: const Text('Passwort vergessen?'),
+                        ),
+                      )
+                    else
+                      const SizedBox(height: AppSpacing.md),
+                    FilledButton(
+                      onPressed: action.isLoading ? null : _submit,
+                      child: Text(
+                        action.isLoading
+                            ? 'Bitte warten …'
+                            : _isSignUp
+                                ? 'Konto erstellen'
+                                : 'Anmelden',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('oder'),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    OutlinedButton.icon(
                       onPressed: action.isLoading
                           ? null
-                          : () async {
-                              final data = await Clipboard.getData('text/plain');
-                              final text = data?.text?.trim();
-                              if (text == null || text.isEmpty) return;
-                              setState(() => _linkController.text = text);
-                            },
-                      child: const Text('Aus Zwischenablage einfügen'),
+                          : () => _signInWithProvider(apple: false),
+                      icon: const Icon(Icons.account_circle_outlined),
+                      label: const Text('Mit Google fortfahren'),
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    OutlinedButton.icon(
+                      onPressed: action.isLoading
+                          ? null
+                          : () => _signInWithProvider(apple: true),
+                      icon: const Icon(Icons.apple),
+                      label: const Text('Mit Apple fortfahren'),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
                     TextButton(
                       onPressed: action.isLoading
                           ? null
                           : () {
-                              _linkController.clear();
-                              setState(() => _linkSent = false);
+                              _passwordController.clear();
+                              _passwordConfirmationController.clear();
+                              setState(() {
+                                _mode = _isSignUp
+                                    ? _AuthMode.signIn
+                                    : _AuthMode.signUp;
+                              });
                             },
-                      child: const Text('Andere E-Mail verwenden'),
-                    ),
-                    TextButton(
-                      onPressed: action.isLoading ? null : _sendLink,
-                      child: const Text('Neuen Link senden'),
+                      child: Text(
+                        _isSignUp
+                            ? 'Du hast schon ein Konto? Anmelden'
+                            : 'Noch kein Konto? Jetzt registrieren',
+                      ),
                     ),
                   ],
-                ],
+                ),
               ),
             ),
           ),

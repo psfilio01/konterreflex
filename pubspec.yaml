@@ -13,7 +13,6 @@ dependencies:
   flutter_riverpod: any
   go_router: any
   supabase_flutter: any
-  app_links: any
   freezed_annotation: any
   json_annotation: any
   record: any

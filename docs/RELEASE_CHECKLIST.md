@@ -45,10 +45,14 @@ Germany/EU. Re-run the review for every additional storefront.
   the signed Stripe webhook is public.
 - [ ] Configure production client URL, public key and server-provided service
   role values; never add the service role to Flutter.
-- [ ] Configure allowed Auth redirect URLs for iOS deep link, Android, user web
-  and the separate admin hostname. Remove localhost entries in production.
-- [ ] Configure email sender/templates, rate limits, bot protection and supported
-  login providers; verify account deletion end to end.
+- [ ] Allow `konterreflex://auth-callback`,
+  `konterreflex://reset-password`, exact user/admin HTTPS origins and their
+  reset paths. Remove localhost entries in production.
+- [ ] Configure custom SMTP, confirmation/recovery templates, password policy,
+  email rate limits and bot protection. Verify registration, confirmation,
+  login, reset and account deletion end to end.
+- [ ] Enable and test Google and Apple in Supabase using server-side provider
+  credentials. Record the Apple OAuth-secret rotation owner and expiry.
 - [ ] Confirm RLS is enabled for every user-owned/admin table and a normal user
   cannot access another user's sessions, recordings, cases or entitlements.
 - [ ] Configure database backups/PITR, recovery test, log retention and alerting.
@@ -122,6 +126,9 @@ alone.
 - [ ] Provide a working review demo account and keep production backend/providers
   available during review.
 - [ ] Verify microphone purpose text and deletion/subscription management routes.
+- [ ] Verify Sign in with Apple and Google cancellation/retry on a physical
+  device; confirm Apple login remains available wherever another social login
+  is offered.
 - [ ] Pass TestFlight testing on supported iPhone/iPad and App Review validation.
 
 ## Google external setup
@@ -132,6 +139,7 @@ alone.
   enable Play App Signing and protect the upload key.
 - [ ] Complete Data safety, content rating, target audience, ads declaration,
   account deletion URL, privacy/support URLs and microphone disclosure.
+- [ ] Test the browser-based Google and Apple callbacks from an installed build.
 - [ ] Pass internal/closed track testing on supported Android versions and form
   factors, including fresh install and update.
 

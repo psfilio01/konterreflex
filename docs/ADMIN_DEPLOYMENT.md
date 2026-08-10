@@ -22,7 +22,9 @@ both targets write to the same local output directory.
 
 ## External setup
 
-1. Add the exact admin HTTPS URL and login callback to Supabase Auth redirects.
+1. Add the exact admin HTTPS origin and `/reset-password` URL to Supabase Auth
+   redirects, then configure email/password, Google and Apple as described in
+   `AUTH.md`.
 2. Grant `app_metadata.role = admin` only from trusted server-side tooling.
 3. Confirm admin RLS tests and test a non-admin account before launch.
 4. Configure the host to send a restrictive CSP, HSTS, `X-Content-Type-Options`

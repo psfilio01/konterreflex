@@ -40,6 +40,8 @@ flutter build ipa --release \
 Upload the archive with Xcode or Transporter and validate it in TestFlight.
 Complete App Privacy, age rating, export compliance, review contact, demo
 account, support/privacy URLs and subscription products in App Store Connect.
+Configure and test the Google and Apple providers before archiving; the external
+credentials and Apple `.p8` key remain outside the repository. See `AUTH.md`.
 
 ## Subscription gate
 

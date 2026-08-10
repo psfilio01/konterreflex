@@ -25,13 +25,24 @@ final authUserProvider = StreamProvider<User?>((ref) async* {
   }
 });
 
+final passwordRecoveryProvider = StreamProvider<bool>((ref) async* {
+  final repository = ref.watch(authRepositoryProvider);
+  yield false;
+  await for (final state in repository.authStateChanges) {
+    yield state.event == AuthChangeEvent.passwordRecovery;
+  }
+});
+
 final profileProvider = FutureProvider<UserProfile?>((ref) async {
   final authState = ref.watch(authUserProvider);
   if (authState.isLoading) return null;
   final user = authState.asData?.value;
   if (user == null) return null;
   try {
-    return await ref.watch(authRepositoryProvider).fetchProfile(user.id).timeout(
+    return await ref
+        .watch(authRepositoryProvider)
+        .fetchProfile(user.id)
+        .timeout(
           const Duration(seconds: 8),
         );
   } on TimeoutException {
@@ -51,25 +62,47 @@ class AuthActionController extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() => const AsyncData(null);
 
-  Future<void> sendSignInOtp(String email) {
-    return _run(() => ref.read(authRepositoryProvider).sendSignInOtp(email));
-  }
-
-  Future<void> verifySignInOtp({
+  Future<void> signInWithPassword({
     required String email,
-    required String token,
+    required String password,
   }) {
     return _run(
-      () => ref.read(authRepositoryProvider).verifySignInOtp(
-            email: email,
-            token: token,
-          ),
+      () => ref
+          .read(authRepositoryProvider)
+          .signInWithPassword(email: email, password: password),
     );
   }
 
-  Future<void> completeSignInFromEmailLink(String link) {
+  Future<RegistrationOutcome?> signUpWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    RegistrationOutcome? outcome;
+    await _run(
+      () async => outcome = await ref
+          .read(authRepositoryProvider)
+          .signUpWithPassword(email: email, password: password),
+    );
+    return state.hasError ? null : outcome;
+  }
+
+  Future<void> signInWithGoogle() {
+    return _run(() => ref.read(authRepositoryProvider).signInWithGoogle());
+  }
+
+  Future<void> signInWithApple() {
+    return _run(() => ref.read(authRepositoryProvider).signInWithApple());
+  }
+
+  Future<void> requestPasswordReset(String email) {
     return _run(
-      () => ref.read(authRepositoryProvider).completeSignInFromEmailLink(link),
+      () => ref.read(authRepositoryProvider).requestPasswordReset(email),
+    );
+  }
+
+  Future<void> updatePassword(String password) {
+    return _run(
+      () => ref.read(authRepositoryProvider).updatePassword(password),
     );
   }
 

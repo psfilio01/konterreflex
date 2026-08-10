@@ -1,26 +1,34 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
-import 'package:konterreflex/src/features/auth/data/auth_deep_link.dart';
+import 'package:konterreflex/src/features/auth/data/auth_redirects.dart';
 import 'package:konterreflex/src/features/auth/domain/user_profile.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+enum RegistrationOutcome { signedIn, emailConfirmationRequired }
 
 abstract interface class AuthRepository {
   User? get currentUser;
 
   Stream<User?> get userChanges;
 
-  Future<void> sendSignInOtp(String email);
+  Stream<AuthState> get authStateChanges;
 
-  Future<void> verifySignInOtp({
+  Future<void> signInWithPassword({
     required String email,
-    required String token,
+    required String password,
   });
 
-  /// Completes passwordless sign-in from a copied Supabase email verify URL.
-  /// Prefer this over opening the link in Mail/Safari, which often prefetches
-  /// and burns the one-time token on iOS.
-  Future<void> completeSignInFromEmailLink(String rawLink);
+  Future<RegistrationOutcome> signUpWithPassword({
+    required String email,
+    required String password,
+  });
+
+  Future<void> signInWithGoogle();
+
+  Future<void> signInWithApple();
+
+  Future<void> requestPasswordReset(String email);
+
+  Future<void> updatePassword(String password);
 
   Future<UserProfile?> fetchProfile(String userId);
 
@@ -43,127 +51,68 @@ class SupabaseAuthRepository implements AuthRepository {
   User? get currentUser => _client.auth.currentUser;
 
   @override
-  Stream<User?> get userChanges =>
-      _client.auth.onAuthStateChange.map((event) => event.session?.user);
+  Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
   @override
-  Future<void> sendSignInOtp(String email) {
-    final redirectUrl =
-        kIsWeb ? Uri.base.resolve('/').toString() : kAuthCallbackRedirectUrl;
-    return _client.auth.signInWithOtp(
+  Stream<User?> get userChanges =>
+      authStateChanges.map((event) => event.session?.user);
+
+  @override
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    await _client.auth.signInWithPassword(
       email: email.trim(),
-      emailRedirectTo: redirectUrl,
+      password: password,
     );
   }
 
   @override
-  Future<void> verifySignInOtp({
+  Future<RegistrationOutcome> signUpWithPassword({
     required String email,
-    required String token,
+    required String password,
   }) async {
-    final normalizedEmail = email.trim();
-    final normalizedToken = token.trim();
-    final types = <OtpType>[
-      OtpType.email,
-      OtpType.magiclink,
-      OtpType.signup,
-    ];
-
-    AuthException? lastError;
-    for (final type in types) {
-      try {
-        await _client.auth.verifyOTP(
-          email: normalizedEmail,
-          token: normalizedToken,
-          type: type,
-        );
-        return;
-      } on AuthException catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError ??
-        const AuthException('Der Anmeldecode konnte nicht geprüft werden.');
+    final response = await _client.auth.signUp(
+      email: email.trim(),
+      password: password,
+      emailRedirectTo: authRedirectUrl(AuthRedirectPurpose.authentication),
+    );
+    return response.session == null
+        ? RegistrationOutcome.emailConfirmationRequired
+        : RegistrationOutcome.signedIn;
   }
 
   @override
-  Future<void> completeSignInFromEmailLink(String rawLink) async {
-    final verifyUri = _extractVerifyUri(rawLink);
-    if (verifyUri == null) {
-      throw const AuthException(
-        'Kein gültiger Anmelde-Link. Kopiere den vollständigen Link aus der E-Mail.',
-      );
-    }
+  Future<void> signInWithGoogle() => _signInWithOAuth(OAuthProvider.google);
 
-    final callbackUri = await _resolveAuthCallback(verifyUri);
-    await _client.auth.getSessionFromUrl(callbackUri);
+  @override
+  Future<void> signInWithApple() => _signInWithOAuth(OAuthProvider.apple);
+
+  Future<void> _signInWithOAuth(OAuthProvider provider) async {
+    final launched = await _client.auth.signInWithOAuth(
+      provider,
+      redirectTo: authRedirectUrl(AuthRedirectPurpose.authentication),
+      authScreenLaunchMode:
+          kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      throw const AuthException(
+          'Die Anbieter-Anmeldung konnte nicht geöffnet werden.');
+    }
   }
 
-  @visibleForTesting
-  static Uri? extractVerifyUriForTest(String rawLink) =>
-      _extractVerifyUri(rawLink);
-
-  static Uri? _extractVerifyUri(String rawLink) {
-    final trimmed = rawLink.trim();
-    if (trimmed.isEmpty) return null;
-
-    final match = RegExp(r'https?://[^\s<>"]+', caseSensitive: false)
-        .firstMatch(trimmed);
-    final candidate = match?.group(0) ?? trimmed;
-    final uri = Uri.tryParse(candidate);
-    if (uri == null || !uri.hasScheme || !uri.host.contains('supabase')) {
-      return null;
-    }
-    if (!uri.path.contains('/auth/v1/verify') &&
-        !uri.queryParameters.containsKey('token')) {
-      return null;
-    }
-    return uri;
+  @override
+  Future<void> requestPasswordReset(String email) {
+    return _client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: authRedirectUrl(AuthRedirectPurpose.passwordRecovery),
+    );
   }
 
-  Future<Uri> _resolveAuthCallback(Uri verifyUri) async {
-    if (kIsWeb) {
-      throw const AuthException(
-        'E-Mail-Link-Anmeldung bitte in der mobilen App abschließen.',
-      );
-    }
-
-    final client = HttpClient();
-    try {
-      var current = verifyUri;
-      for (var i = 0; i < 5; i++) {
-        final request = await client.getUrl(current);
-        request.followRedirects = false;
-        request.headers.set(HttpHeaders.userAgentHeader, 'Konterreflex/1.0');
-        final response = await request.close();
-        await response.drain<void>();
-
-        final location = response.headers.value(HttpHeaders.locationHeader);
-        if (location == null || location.isEmpty) {
-          throw const AuthException(
-            'Der Anmelde-Link konnte nicht bestätigt werden.',
-          );
-        }
-
-        final next = verifyUri.resolve(location);
-        if (isAuthCallbackUri(next) ||
-            next.scheme == 'konterreflex' ||
-            next.queryParameters.containsKey('code') ||
-            next.queryParameters.containsKey('access_token')) {
-          return next;
-        }
-        if (response.statusCode >= 300 && response.statusCode < 400) {
-          current = next;
-          continue;
-        }
-        throw AuthException(
-          'Unerwartete Antwort bei der Anmeldung (${response.statusCode}).',
-        );
-      }
-      throw const AuthException('Der Anmelde-Link konnte nicht bestätigt werden.');
-    } finally {
-      client.close(force: true);
-    }
+  @override
+  Future<void> updatePassword(String password) async {
+    await _client.auth.updateUser(UserAttributes(password: password));
   }
 
   @override
