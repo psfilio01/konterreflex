@@ -1,9 +1,33 @@
 import { AiTask } from "../contracts.ts";
 import { JsonSchema } from "./schema.ts";
+import conversationReplyV1 from "../../../prompts/conversation_reply_v1.md" with {
+  type: "text",
+};
+import goldenBookExtractV1 from "../../../prompts/golden_book_extract_v1.md" with {
+  type: "text",
+};
+import realLifeExtractV1 from "../../../prompts/real_life_extract_v1.md" with {
+  type: "text",
+};
+import realLifeReconstructV1 from "../../../prompts/real_life_reconstruct_v1.md" with {
+  type: "text",
+};
+import responseEvaluateV2 from "../../../prompts/response_evaluate_v2.md" with {
+  type: "text",
+};
+import scenarioGenerateV2 from "../../../prompts/scenario_generate_v2.md" with {
+  type: "text",
+};
+import scenarioPersonalizeV1 from "../../../prompts/scenario_personalize_v1.md" with {
+  type: "text",
+};
+import scenarioSafetyReviewV1 from "../../../prompts/scenario_safety_review_v1.md" with {
+  type: "text",
+};
 
 export interface AiTaskDefinition {
   task: AiTask;
-  promptFile: string;
+  prompt: string;
   promptVersion: string;
   outputSchema: JsonSchema;
 }
@@ -65,19 +89,19 @@ const reconstructionSchema = strictObject({
 export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   "scenario.generate": {
     task: "scenario.generate",
-    promptFile: "scenario_generate_v2.md",
+    prompt: scenarioGenerateV2,
     promptVersion: "scenario_generate_v2",
     outputSchema: scenarioSchema,
   },
   "scenario.personalize": {
     task: "scenario.personalize",
-    promptFile: "scenario_personalize_v1.md",
+    prompt: scenarioPersonalizeV1,
     promptVersion: "scenario_personalize_v1",
     outputSchema: scenarioSchema,
   },
   "scenario.safety_review": {
     task: "scenario.safety_review",
-    promptFile: "scenario_safety_review_v1.md",
+    prompt: scenarioSafetyReviewV1,
     promptVersion: "scenario_safety_review_v1",
     outputSchema: strictObject({
       decision: { type: "string", enum: ["pass", "needs_review", "block"] },
@@ -90,7 +114,7 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   },
   "response.evaluate": {
     task: "response.evaluate",
-    promptFile: "response_evaluate_v2.md",
+    prompt: responseEvaluateV2,
     promptVersion: "response_evaluate_v2",
     outputSchema: strictObject({
       headline: text(1),
@@ -110,7 +134,7 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   },
   "real_life.extract": {
     task: "real_life.extract",
-    promptFile: "real_life_extract_v1.md",
+    prompt: realLifeExtractV1,
     promptVersion: "real_life_extract_v1",
     outputSchema: strictObject({
       setting: text(),
@@ -129,19 +153,19 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   },
   "real_life.reconstruct": {
     task: "real_life.reconstruct",
-    promptFile: "real_life_reconstruct_v1.md",
+    prompt: realLifeReconstructV1,
     promptVersion: "real_life_reconstruct_v1",
     outputSchema: reconstructionSchema,
   },
   "conversation.reply": {
     task: "conversation.reply",
-    promptFile: "conversation_reply_v1.md",
+    prompt: conversationReplyV1,
     promptVersion: "conversation_reply_v1",
     outputSchema: strictObject({ reply: text(1) }),
   },
   "golden_book.extract": {
     task: "golden_book.extract",
-    promptFile: "golden_book_extract_v1.md",
+    prompt: goldenBookExtractV1,
     promptVersion: "golden_book_extract_v1",
     outputSchema: strictObject({
       status: {
@@ -155,7 +179,3 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
     }),
   },
 };
-
-export function promptUrl(file: string): URL {
-  return new URL(`../../../prompts/${file}`, import.meta.url);
-}

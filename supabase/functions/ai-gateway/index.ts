@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { GeminiProvider } from "../_shared/ai/gemini_provider.ts";
 import { AiProvider } from "../_shared/ai/provider.ts";
 import { AiProviderRegistry } from "../_shared/ai/provider_registry.ts";
-import { AiTaskDefinition, promptUrl } from "../_shared/ai/task_registry.ts";
+import { AiTaskDefinition } from "../_shared/ai/task_registry.ts";
 import { createAiGatewayHandler } from "./handler.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -45,7 +45,7 @@ Deno.serve(createAiGatewayHandler({
     return error == null && data.user != null;
   },
   loadPrompt(definition: AiTaskDefinition) {
-    return Deno.readTextFile(promptUrl(definition.promptFile));
+    return Promise.resolve(definition.prompt);
   },
   log(message, metadata) {
     console.error(JSON.stringify({ message, ...metadata }));
