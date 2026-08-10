@@ -33,7 +33,8 @@ function json(body: unknown, status: number): Response {
 export function createSpeechGatewayHandler(
   dependencies: SpeechGatewayDependencies,
 ): (request: Request) => Promise<Response> {
-  const createRequestId = dependencies.createRequestId ?? crypto.randomUUID;
+  const createRequestId = dependencies.createRequestId ??
+    (() => crypto.randomUUID());
   const timeoutMs = dependencies.timeoutMs ?? 25_000;
 
   return async (request) => {

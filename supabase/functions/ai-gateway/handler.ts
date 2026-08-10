@@ -40,7 +40,8 @@ export function createAiGatewayHandler(
   dependencies: AiGatewayDependencies,
 ): (request: Request) => Promise<Response> {
   const timeoutMs = dependencies.timeoutMs ?? 20_000;
-  const createRequestId = dependencies.createRequestId ?? crypto.randomUUID;
+  const createRequestId = dependencies.createRequestId ??
+    (() => crypto.randomUUID());
   const log = dependencies.log ?? (() => {});
 
   return async (request) => {
