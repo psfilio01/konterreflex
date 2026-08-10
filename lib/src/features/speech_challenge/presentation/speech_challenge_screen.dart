@@ -13,6 +13,7 @@ import 'package:konterreflex/src/features/speech_challenge/application/speech_ch
 import 'package:konterreflex/src/features/speech_challenge/application/speech_challenge_providers.dart';
 import 'package:konterreflex/src/features/speech_challenge/domain/speech_challenge.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
+import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_summary.dart';
 import 'package:konterreflex/src/shared/widgets/optional_transcript.dart';
 import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
 
@@ -151,10 +152,24 @@ class _ChallengeSessionScreenState
                       if (_controller.feedback case final feedback?) ...[
                         const SizedBox(height: AppSpacing.md),
                         Card(
-                            child: Padding(
-                                padding: const EdgeInsets.all(AppSpacing.md),
-                                child: Text(
-                                    '${feedback.headline}\n\n${feedback.improvement}'))),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                QualitativeFeedbackSummary(feedback: feedback),
+                                const SizedBox(height: AppSpacing.md),
+                                Text(
+                                  feedback.headline,
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(feedback.improvement),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   ),

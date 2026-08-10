@@ -6,6 +6,7 @@ import {
   realLifeExtractV1,
   realLifeReconstructV1,
   responseEvaluateV2,
+  responseEvaluateV3,
   scenarioGenerateV2,
   scenarioPersonalizeV1,
   scenarioSafetyReviewV1,
@@ -72,6 +73,20 @@ const reconstructionSchema = strictObject({
   turns: { type: "array", items: turnSchema, minItems: 1, maxItems: 8 },
 });
 
+const feedbackSignalSchema: JsonSchema = {
+  type: "string",
+  enum: ["strong", "developing", "focus"],
+};
+
+const feedbackDimensionSignalsSchema = strictObject({
+  posture: feedbackSignalSchema,
+  precision: feedbackSignalSchema,
+  frame: feedbackSignalSchema,
+  social_effect: feedbackSignalSchema,
+  naturalness: feedbackSignalSchema,
+  escalation_fit: feedbackSignalSchema,
+});
+
 export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   "scenario.generate": {
     task: "scenario.generate",
@@ -103,6 +118,28 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
     prompt: responseEvaluateV2,
     promptVersion: "response_evaluate_v2",
     outputSchema: strictObject({
+      headline: text(1),
+      explanation: text(1),
+      strengths: textList(3),
+      improvement: text(1),
+      alternatives: textList(3),
+      dimensions: strictObject({
+        posture: text(1),
+        precision: text(1),
+        frame: text(1),
+        social_effect: text(1),
+        naturalness: text(1),
+        escalation_fit: text(1),
+      }),
+    }),
+  },
+  "response.evaluate_visual": {
+    task: "response.evaluate_visual",
+    prompt: responseEvaluateV3,
+    promptVersion: "response_evaluate_visual_v3",
+    outputSchema: strictObject({
+      overall_signal: feedbackSignalSchema,
+      dimension_signals: feedbackDimensionSignalsSchema,
       headline: text(1),
       explanation: text(1),
       strengths: textList(3),

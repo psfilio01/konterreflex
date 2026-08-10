@@ -215,6 +215,15 @@ class _FeedbackRepository implements FeedbackRepository {
 }
 
 const testFeedback = QualitativeFeedback(
+  overallSignal: FeedbackSignal.strong,
+  dimensionSignals: FeedbackDimensionSignals(
+    posture: FeedbackSignal.strong,
+    precision: FeedbackSignal.strong,
+    frame: FeedbackSignal.developing,
+    socialEffect: FeedbackSignal.strong,
+    naturalness: FeedbackSignal.strong,
+    escalationFit: FeedbackSignal.developing,
+  ),
   headline: 'Klar positioniert',
   explanation: 'Die Antwort macht deinen Standpunkt verständlich.',
   strengths: ['Ruhiger Einstieg'],

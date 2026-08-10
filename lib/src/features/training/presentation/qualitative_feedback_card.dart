@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
+import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_summary.dart';
 
 class QualitativeFeedbackCard extends StatelessWidget {
   const QualitativeFeedbackCard(
@@ -18,6 +19,8 @@ class QualitativeFeedbackCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            QualitativeFeedbackSummary(feedback: feedback),
+            const SizedBox(height: AppSpacing.lg),
             Text(feedback.headline,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.sm),

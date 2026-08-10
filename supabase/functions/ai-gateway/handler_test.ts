@@ -300,6 +300,38 @@ Deno.test("rejects numeric scoring fields in response evaluation", async () => {
   );
 });
 
+Deno.test("accepts categorical visual feedback without a score", async () => {
+  const provider = new MockAiProvider(visualFeedback());
+  const response = await handlerFor(provider)(
+    request("response.evaluate_visual"),
+  );
+  const body = await response.json();
+
+  assert(response.status === 200, "expected valid visual feedback");
+  assert(body.data.overall_signal === "strong", "expected overall signal");
+  assert(
+    body.promptVersion === "response_evaluate_visual_v3",
+    "expected visual prompt version",
+  );
+});
+
+Deno.test("rejects numeric values as visual feedback signals", async () => {
+  const provider = new MockAiProvider({
+    ...visualFeedback(),
+    overall_signal: "8",
+  });
+  const response = await handlerFor(provider)(
+    request("response.evaluate_visual"),
+  );
+  const body = await response.json();
+
+  assert(response.status === 502, "expected schema rejection");
+  assert(
+    body.error.code === "invalid_provider_response",
+    "expected validation error",
+  );
+});
+
 Deno.test("safety review keeps hostile training context separate from discrimination", async () => {
   const provider = new MockAiProvider({
     decision: "pass",
@@ -323,3 +355,30 @@ Deno.test("safety review keeps hostile training context separate from discrimina
     "expected no trait linkage",
   );
 });
+
+function visualFeedback(): Record<string, unknown> {
+  return {
+    overall_signal: "strong",
+    dimension_signals: {
+      posture: "strong",
+      precision: "strong",
+      frame: "developing",
+      social_effect: "strong",
+      naturalness: "strong",
+      escalation_fit: "developing",
+    },
+    headline: "Klar",
+    explanation: "Die Aussage ist verständlich.",
+    strengths: ["Ruhiger Einstieg"],
+    improvement: "Nenne den nächsten Schritt.",
+    alternatives: ["Ich sehe das anders."],
+    dimensions: {
+      posture: "ruhig",
+      precision: "klar",
+      frame: "neu gesetzt",
+      social_effect: "anschlussfähig",
+      naturalness: "sprechbar",
+      escalation_fit: "passend",
+    },
+  };
+}

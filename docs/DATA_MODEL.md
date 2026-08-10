@@ -22,6 +22,10 @@ Core tables:
 
 Generated scenarios default to `draft`. Only admins may set them to `active`.
 
+`feedback` stores one categorical `overall_signal` and six categorical
+`dimension_signals` alongside the explanatory qualitative text. Allowed values
+are `strong`, `developing` and `focus`; numerical scoring remains unsupported.
+
 Sensitive user recordings should be optional and deletable. Prefer derived transcript + metadata when long term raw audio storage is unnecessary.
 
 The shared speech cache contains only approved reusable product content. It does

@@ -3,6 +3,7 @@ export const aiTasks = [
   "scenario.personalize",
   "scenario.safety_review",
   "response.evaluate",
+  "response.evaluate_visual",
   "real_life.extract",
   "real_life.reconstruct",
   "conversation.reply",

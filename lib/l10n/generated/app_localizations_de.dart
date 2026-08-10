@@ -520,6 +520,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get feedbackAlternatives => 'Natürliche Alternativen';
 
   @override
+  String get feedbackOverview => 'Auf einen Blick';
+
+  @override
+  String get feedbackSignalStrong => 'Stark gelöst';
+
+  @override
+  String get feedbackSignalDeveloping => 'Auf gutem Weg';
+
+  @override
+  String get feedbackSignalFocus => 'Noch einmal schärfen';
+
+  @override
+  String get feedbackDimensionPosture => 'Präsenz';
+
+  @override
+  String get feedbackDimensionPrecision => 'Präzision';
+
+  @override
+  String get feedbackDimensionFrame => 'Rahmen';
+
+  @override
+  String get feedbackDimensionSocialEffect => 'Wirkung';
+
+  @override
+  String get feedbackDimensionNaturalness => 'Natürlich';
+
+  @override
+  String get feedbackDimensionEscalationFit => 'Passung';
+
+  @override
   String get saveInGoldenBook => 'Im Golden Book speichern';
 
   @override

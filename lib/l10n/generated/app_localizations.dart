@@ -992,6 +992,66 @@ abstract class AppLocalizations {
   /// **'Natürliche Alternativen'**
   String get feedbackAlternatives;
 
+  /// No description provided for @feedbackOverview.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf einen Blick'**
+  String get feedbackOverview;
+
+  /// No description provided for @feedbackSignalStrong.
+  ///
+  /// In de, this message translates to:
+  /// **'Stark gelöst'**
+  String get feedbackSignalStrong;
+
+  /// No description provided for @feedbackSignalDeveloping.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf gutem Weg'**
+  String get feedbackSignalDeveloping;
+
+  /// No description provided for @feedbackSignalFocus.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch einmal schärfen'**
+  String get feedbackSignalFocus;
+
+  /// No description provided for @feedbackDimensionPosture.
+  ///
+  /// In de, this message translates to:
+  /// **'Präsenz'**
+  String get feedbackDimensionPosture;
+
+  /// No description provided for @feedbackDimensionPrecision.
+  ///
+  /// In de, this message translates to:
+  /// **'Präzision'**
+  String get feedbackDimensionPrecision;
+
+  /// No description provided for @feedbackDimensionFrame.
+  ///
+  /// In de, this message translates to:
+  /// **'Rahmen'**
+  String get feedbackDimensionFrame;
+
+  /// No description provided for @feedbackDimensionSocialEffect.
+  ///
+  /// In de, this message translates to:
+  /// **'Wirkung'**
+  String get feedbackDimensionSocialEffect;
+
+  /// No description provided for @feedbackDimensionNaturalness.
+  ///
+  /// In de, this message translates to:
+  /// **'Natürlich'**
+  String get feedbackDimensionNaturalness;
+
+  /// No description provided for @feedbackDimensionEscalationFit.
+  ///
+  /// In de, this message translates to:
+  /// **'Passung'**
+  String get feedbackDimensionEscalationFit;
+
   /// No description provided for @saveInGoldenBook.
   ///
   /// In de, this message translates to:

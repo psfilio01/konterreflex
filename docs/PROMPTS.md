@@ -8,6 +8,7 @@ Current tasks:
 - `scenario.personalize` -> `scenario_personalize_v1.md`
 - `scenario.safety_review` -> `scenario_safety_review_v1.md`
 - `response.evaluate` -> `response_evaluate_v2.md`
+- `response.evaluate_visual` -> `response_evaluate_v3.md`
 - `real_life.extract` -> `real_life_extract_v1.md`
 - `real_life.reconstruct` -> `real_life_reconstruct_v1.md`
 - `conversation.reply` -> `conversation_reply_v1.md`

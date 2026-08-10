@@ -71,6 +71,10 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
           builder: (context, child) {
             final status = _controller.status;
             final permission = _controller.voice.permissionStatus;
+            final feedback = _controller.feedback;
+            final showsCompletedResult =
+                status == ScenarioSessionStatus.feedbackReady &&
+                    feedback != null;
             return SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Center(
@@ -78,11 +82,13 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
                     children: [
-                      VoiceTurnOrb(
-                        size: 156,
-                        controller: _controller.voiceController,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
+                      if (!showsCompletedResult) ...[
+                        VoiceTurnOrb(
+                          size: 156,
+                          controller: _controller.voiceController,
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                      ],
                       Text(
                         _statusText(status),
                         style: Theme.of(context).textTheme.headlineMedium,
@@ -96,7 +102,15 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                           style: const TextStyle(color: AppColors.muted),
                         ),
                       ],
-                      const SizedBox(height: AppSpacing.xl),
+                      if (showsCompletedResult) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        QualitativeFeedbackCard(
+                          feedback: feedback,
+                          onSavePhrase: _controller.savePhrase,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ] else
+                        const SizedBox(height: AppSpacing.xl),
                       _PrimaryAction(controller: _controller),
                       if (permission ==
                           MicrophonePermissionStatus.permanentlyDenied)
@@ -114,7 +128,7 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         OptionalTranscript(transcript: transcript),
                       ],
-                      if (_controller.feedback case final feedback?) ...[
+                      if (!showsCompletedResult && feedback != null) ...[
                         const SizedBox(height: AppSpacing.lg),
                         QualitativeFeedbackCard(
                           feedback: feedback,

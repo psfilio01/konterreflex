@@ -10,6 +10,7 @@ All app calls target a server side `ai-gateway` Edge Function. The gateway expos
 - `scenario.personalize`
 - `scenario.safety_review`
 - `response.evaluate`
+- `response.evaluate_visual`
 - `real_life.extract`
 - `real_life.reconstruct`
 - `conversation.reply`
@@ -22,6 +23,10 @@ Implement a small internal adapter instead of spreading an external SDK througho
 
 ## Output discipline
 Use versioned JSON schemas. Store prompt version, provider and model name with generated artifacts for traceability.
+
+Visual feedback uses categorical signals rather than calculated scores. The
+legacy evaluation task remains available for older app versions; new clients use
+the separately versioned visual schema.
 
 ## Knowledge foundation
 Communication science references must be curated in a separate, reviewable knowledge layer. Do not claim scientific authority from a name alone. Store source, concept, intended use, evidence status and limitations.
