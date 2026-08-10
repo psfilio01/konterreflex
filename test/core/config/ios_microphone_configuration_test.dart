@@ -15,5 +15,9 @@ void main() {
       ),
     );
     expect(podfile, contains("'PERMISSION_MICROPHONE=1'"));
+    expect(
+      File('ios/Runner/en.lproj/InfoPlist.strings').readAsStringSync(),
+      contains('Konterreflex needs microphone access'),
+    );
   });
 }

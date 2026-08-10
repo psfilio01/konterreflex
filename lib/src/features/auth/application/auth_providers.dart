@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:konterreflex/src/core/localization/app_language.dart';
 import 'package:konterreflex/src/features/auth/data/auth_repository.dart';
 import 'package:konterreflex/src/features/auth/domain/user_profile.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -117,6 +118,21 @@ class AuthActionController extends Notifier<AsyncValue<void>> {
       () => ref
           .read(authRepositoryProvider)
           .completeOnboarding(userId: user.id, displayName: displayName),
+    );
+    if (!state.hasError) ref.invalidate(profileProvider);
+  }
+
+  Future<void> updateAppLanguage(AppLanguage language) async {
+    final user = ref.read(authUserProvider).asData?.value;
+    if (user == null) {
+      state = AsyncError(StateError('No active session.'), StackTrace.current);
+      return;
+    }
+    await _run(
+      () => ref.read(authRepositoryProvider).updateLocale(
+            userId: user.id,
+            locale: language.code,
+          ),
     );
     if (!state.hasError) ref.invalidate(profileProvider);
   }

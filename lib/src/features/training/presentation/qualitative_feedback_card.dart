@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 
 class QualitativeFeedbackCard extends StatelessWidget {
@@ -23,13 +24,14 @@ class QualitativeFeedbackCard extends StatelessWidget {
             Text(feedback.explanation),
             if (feedback.strengths.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),
-              Text('Das trägt', style: Theme.of(context).textTheme.titleMedium),
+              Text(context.l10n.feedbackStrengths,
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: AppSpacing.xs),
               for (final strength in feedback.strengths)
                 _FeedbackPoint(icon: Icons.check_rounded, text: strength),
             ],
             const SizedBox(height: AppSpacing.lg),
-            Text('Nächster Schritt',
+            Text(context.l10n.feedbackNextStep,
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.xs),
             _FeedbackPoint(
@@ -41,7 +43,7 @@ class QualitativeFeedbackCard extends StatelessWidget {
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: EdgeInsets.zero,
-                title: const Text('Natürliche Alternativen'),
+                title: Text(context.l10n.feedbackAlternatives),
                 children: [
                   for (final alternative in feedback.alternatives)
                     Row(
@@ -55,7 +57,7 @@ class QualitativeFeedbackCard extends StatelessWidget {
                         ),
                         if (onSavePhrase != null)
                           IconButton(
-                            tooltip: 'Im Golden Book speichern',
+                            tooltip: context.l10n.saveInGoldenBook,
                             onPressed: () => onSavePhrase!(alternative),
                             icon: const Icon(Icons.bookmark_add_outlined),
                           ),

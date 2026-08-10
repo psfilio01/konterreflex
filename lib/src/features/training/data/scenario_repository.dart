@@ -19,9 +19,10 @@ abstract interface class ScenarioRepository {
 }
 
 class SupabaseScenarioRepository implements ScenarioRepository {
-  SupabaseScenarioRepository(this._client);
+  SupabaseScenarioRepository(this._client, {this.languageCode = 'de'});
 
   final SupabaseClient _client;
+  final String languageCode;
 
   static const _scenarioSelection = '''
     id,
@@ -44,6 +45,7 @@ class SupabaseScenarioRepository implements ScenarioRepository {
         .from('scenarios')
         .select(_scenarioSelection)
         .eq('status', 'active')
+        .eq('locale', languageCode)
         .order('title');
     return data.map(TrainingScenario.fromJson).toList();
   }

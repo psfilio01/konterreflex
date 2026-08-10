@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 
 enum IntelligenceOrbState { idle, speaking, listening, thinking, success }
 
@@ -12,6 +14,14 @@ extension IntelligenceOrbStatePresentation on IntelligenceOrbState {
         IntelligenceOrbState.listening => 'Konterreflex hört zu',
         IntelligenceOrbState.thinking => 'Konterreflex denkt nach',
         IntelligenceOrbState.success => 'Abgeschlossen',
+      };
+
+  String localizedLabel(AppLocalizations l10n) => switch (this) {
+        IntelligenceOrbState.idle => l10n.orbReady,
+        IntelligenceOrbState.speaking => l10n.orbSpeaking,
+        IntelligenceOrbState.listening => l10n.orbListening,
+        IntelligenceOrbState.thinking => l10n.orbThinking,
+        IntelligenceOrbState.success => l10n.orbComplete,
       };
 
   IconData get icon => switch (this) {
@@ -105,11 +115,12 @@ class _IntelligenceOrbState extends State<IntelligenceOrb>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final stateLabel = widget.state.localizedLabel(context.l10n);
     return Semantics(
       container: true,
       liveRegion: true,
       image: true,
-      label: widget.state.label,
+      label: stateLabel,
       child: ExcludeSemantics(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -176,7 +187,7 @@ class _IntelligenceOrbState extends State<IntelligenceOrb>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 child: Text(
-                  widget.state.label,
+                  stateLabel,
                   key: ValueKey(widget.state),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: AppColors.muted,

@@ -22,6 +22,9 @@ Deno.test("ElevenLabs TTS keeps the API key in a server header", async () => {
       moderator: "moderator_voice",
       actor: "actor_voice",
       intelligence: "intelligence_voice",
+      en: {
+        moderator: "english_moderator_voice",
+      },
     },
     "eleven_multilingual_v2",
     "scribe_v2",
@@ -30,9 +33,13 @@ Deno.test("ElevenLabs TTS keeps the API key in a server header", async () => {
   const result = await provider.synthesize({
     text: "Die Szene beginnt.",
     role: "moderator",
+    languageCode: "en",
   }, new AbortController().signal);
 
-  assert(capturedUrl.includes("moderator_voice"), "expected role voice");
+  assert(
+    capturedUrl.includes("english_moderator_voice"),
+    "expected language-specific role voice",
+  );
   assert(!capturedUrl.includes("server-key"), "key must not appear in URL");
   assert(
     capturedHeaders.get("xi-api-key") === "server-key",

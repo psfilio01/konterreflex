@@ -14,6 +14,7 @@ export type AiTask = (typeof aiTasks)[number];
 export interface AiRequest {
   task: AiTask;
   payload: Record<string, unknown>;
+  responseLanguage: "de" | "en";
   schemaVersion: "1";
 }
 

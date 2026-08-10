@@ -7,6 +7,8 @@ import 'package:konterreflex/src/core/audio/supabase_speech_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
+import 'package:konterreflex/src/core/localization/localization_providers.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_session_controller.dart';
@@ -35,17 +37,21 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
   void initState() {
     super.initState();
     final client = ref.read(supabaseClientProvider);
+    final strings = ref.read(appLocalizationsProvider);
+    final language = ref.read(appLanguageProvider);
     _controller = ScenarioSessionController(
       scenario: widget.scenario,
       repository: ref.read(scenarioRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
       goldenBookCapture: ref.read(goldenBookCaptureProvider),
       analytics: ref.read(privacyAnalyticsProvider),
+      strings: strings,
       voice: VoiceTurnController(
         permission: PermissionHandlerMicrophone(),
         recorder: RecordVoiceRecorder(),
         playback: JustAudioPlaybackQueue(),
-        speech: SupabaseSpeechGateway(client),
+        speech: SupabaseSpeechGateway(client, language: language),
+        strings: strings,
       ),
     );
   }
@@ -97,14 +103,13 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                           MicrophonePermissionStatus.permanentlyDenied)
                         TextButton(
                           onPressed: _controller.openMicrophoneSettings,
-                          child:
-                              const Text('Mikrofon in Einstellungen erlauben'),
+                          child: Text(context.l10n.allowMicrophoneSettings),
                         ),
                       if (status == ScenarioSessionStatus.playing)
                         TextButton.icon(
                           onPressed: _controller.interrupt,
                           icon: const Icon(Icons.stop_circle_outlined),
-                          label: const Text('Wiedergabe unterbrechen'),
+                          label: Text(context.l10n.interruptPlayback),
                         ),
                       if (_controller.transcript case final transcript?) ...[
                         const SizedBox(height: AppSpacing.lg),
@@ -119,7 +124,7 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                       ],
                       if (_controller.savedPhrase case final phrase?) ...[
                         const SizedBox(height: AppSpacing.sm),
-                        Text('Im Golden Book gespeichert: „$phrase“'),
+                        Text(context.l10n.savedInGoldenBook(phrase)),
                       ],
                       if (_controller.followUpAnswer case final answer?) ...[
                         const SizedBox(height: AppSpacing.md),
@@ -142,21 +147,24 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
   }
 
   String _statusText(ScenarioSessionStatus status) => switch (status) {
-        ScenarioSessionStatus.ready => 'Bereit für die Situation?',
-        ScenarioSessionStatus.starting => 'Training wird vorbereitet …',
-        ScenarioSessionStatus.playing => 'Hör dir die Situation an',
-        ScenarioSessionStatus.awaitingResponse => 'Wie antwortest du?',
-        ScenarioSessionStatus.recording => 'Du sprichst',
-        ScenarioSessionStatus.processing => 'Antwort wird verarbeitet …',
-        ScenarioSessionStatus.feedbackReady => 'Dein Feedback',
-        ScenarioSessionStatus.followUpRecording => 'Deine Rückfrage',
+        ScenarioSessionStatus.ready => context.l10n.trainingReady,
+        ScenarioSessionStatus.starting => context.l10n.trainingStarting,
+        ScenarioSessionStatus.playing => context.l10n.trainingPlaying,
+        ScenarioSessionStatus.awaitingResponse =>
+          context.l10n.trainingAnswerPrompt,
+        ScenarioSessionStatus.recording => context.l10n.trainingRecording,
+        ScenarioSessionStatus.processing => context.l10n.trainingProcessing,
+        ScenarioSessionStatus.feedbackReady =>
+          context.l10n.trainingFeedbackReady,
+        ScenarioSessionStatus.followUpRecording =>
+          context.l10n.trainingFollowUp,
         ScenarioSessionStatus.followUpProcessing =>
-          'Rückfrage wird beantwortet …',
+          context.l10n.trainingFollowUpProcessing,
         ScenarioSessionStatus.goldenBookRecording =>
-          'Welche Formulierung möchtest du speichern?',
+          context.l10n.trainingGoldenBookPrompt,
         ScenarioSessionStatus.goldenBookProcessing =>
-          'Formulierung wird aufgelöst …',
-        ScenarioSessionStatus.error => 'Noch nicht abgeschlossen',
+          context.l10n.trainingGoldenBookProcessing,
+        ScenarioSessionStatus.error => context.l10n.notComplete,
       };
 }
 
@@ -171,27 +179,27 @@ class _PrimaryAction extends StatelessWidget {
       ScenarioSessionStatus.ready => FilledButton.icon(
           onPressed: controller.start,
           icon: const Icon(Icons.play_arrow_rounded),
-          label: const Text('Szene starten'),
+          label: Text(context.l10n.startScene),
         ),
       ScenarioSessionStatus.awaitingResponse => FilledButton.icon(
           onPressed: controller.startRecording,
           icon: const Icon(Icons.mic_none_rounded),
-          label: const Text('Antwort aufnehmen'),
+          label: Text(context.l10n.recordAnswer),
         ),
       ScenarioSessionStatus.recording => FilledButton.icon(
           onPressed: controller.submitResponse,
           icon: const Icon(Icons.stop_rounded),
-          label: const Text('Aufnahme beenden'),
+          label: Text(context.l10n.stopRecording),
         ),
       ScenarioSessionStatus.followUpRecording => FilledButton.icon(
           onPressed: controller.submitFollowUp,
           icon: const Icon(Icons.stop_rounded),
-          label: const Text('Rückfrage senden'),
+          label: Text(context.l10n.sendFollowUp),
         ),
       ScenarioSessionStatus.goldenBookRecording => FilledButton.icon(
           onPressed: controller.submitGoldenBookCommand,
           icon: const Icon(Icons.stop_rounded),
-          label: const Text('Sprachbefehl senden'),
+          label: Text(context.l10n.sendVoiceCommand),
         ),
       ScenarioSessionStatus.feedbackReady => Wrap(
           spacing: AppSpacing.sm,
@@ -201,28 +209,28 @@ class _PrimaryAction extends StatelessWidget {
             FilledButton.icon(
               onPressed: controller.startFollowUp,
               icon: const Icon(Icons.mic_none_rounded),
-              label: const Text('Rückfrage stellen'),
+              label: Text(context.l10n.askFollowUp),
             ),
             OutlinedButton.icon(
               onPressed: controller.startGoldenBookCommand,
               icon: const Icon(Icons.bookmark_add_outlined),
-              label: const Text('Satz per Stimme speichern'),
+              label: Text(context.l10n.savePhraseByVoice),
             ),
             OutlinedButton.icon(
               onPressed: controller.retryScene,
               icon: const Icon(Icons.replay_rounded),
-              label: const Text('Szene wiederholen'),
+              label: Text(context.l10n.repeatScene),
             ),
           ],
         ),
       ScenarioSessionStatus.error when controller.transcript != null =>
         FilledButton(
           onPressed: controller.retryPersistence,
-          child: const Text('Speichern erneut versuchen'),
+          child: Text(context.l10n.retrySave),
         ),
       ScenarioSessionStatus.error => FilledButton(
           onPressed: controller.start,
-          child: const Text('Erneut starten'),
+          child: Text(context.l10n.restart),
         ),
       _ => const SizedBox.shrink(),
     };

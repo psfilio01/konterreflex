@@ -37,6 +37,11 @@ abstract interface class AuthRepository {
     required String displayName,
   });
 
+  Future<void> updateLocale({
+    required String userId,
+    required String locale,
+  });
+
   Future<void> signOut();
 
   Future<void> deleteAccount();
@@ -130,6 +135,17 @@ class SupabaseAuthRepository implements AuthRepository {
     await _client
         .from('profiles')
         .update({'display_name': displayName.trim()}).eq('id', userId);
+  }
+
+  @override
+  Future<void> updateLocale({
+    required String userId,
+    required String locale,
+  }) async {
+    if (locale != 'de' && locale != 'en') {
+      throw ArgumentError.value(locale, 'locale', 'Unsupported app language');
+    }
+    await _client.from('profiles').update({'locale': locale}).eq('id', userId);
   }
 
   @override

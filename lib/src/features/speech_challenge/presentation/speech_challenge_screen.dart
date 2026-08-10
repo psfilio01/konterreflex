@@ -6,6 +6,8 @@ import 'package:konterreflex/src/core/audio/record_voice_recorder.dart';
 import 'package:konterreflex/src/core/audio/supabase_speech_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
+import 'package:konterreflex/src/core/localization/localization_providers.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/speech_challenge/application/speech_challenge_controller.dart';
 import 'package:konterreflex/src/features/speech_challenge/application/speech_challenge_providers.dart';
@@ -22,17 +24,16 @@ class SpeechChallengeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sets = ref.watch(challengeSetsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Speech Challenge')),
+      appBar: AppBar(title: Text(context.l10n.speechChallengeTitle)),
       body: SafeArea(
         child: sets.when(
           data: (items) => ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              Text('Wähle ein Thema',
+              Text(context.l10n.chooseTopic,
                   style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: AppSpacing.sm),
-              const Text(
-                  'Kurze Impulse, gesprochene Antworten und direktes qualitatives Feedback.'),
+              Text(context.l10n.speechChallengeIntro),
               const SizedBox(height: AppSpacing.lg),
               for (var index = 0; index < items.length; index++) ...[
                 Card(
@@ -53,8 +54,8 @@ class SpeechChallengeScreen extends ConsumerWidget {
               ],
             ],
           ),
-          error: (_, __) => const Center(
-              child: Text('Die Challenge-Sets konnten nicht geladen werden.')),
+          error: (_, __) =>
+              Center(child: Text(context.l10n.challengeSetsLoadError)),
           loading: () => const Center(child: CircularProgressIndicator()),
         ),
       ),
@@ -79,15 +80,19 @@ class _ChallengeSessionScreenState
   void initState() {
     super.initState();
     final client = ref.read(supabaseClientProvider);
+    final strings = ref.read(appLocalizationsProvider);
+    final language = ref.read(appLanguageProvider);
     _controller = SpeechChallengeController(
       challengeSet: widget.challengeSet,
       repository: ref.read(speechChallengeRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
+      strings: strings,
       voice: VoiceTurnController(
         permission: PermissionHandlerMicrophone(),
         recorder: RecordVoiceRecorder(),
         playback: JustAudioPlaybackQueue(),
-        speech: SupabaseSpeechGateway(client),
+        speech: SupabaseSpeechGateway(client, language: language),
+        strings: strings,
       ),
     );
   }
@@ -130,14 +135,14 @@ class _ChallengeSessionScreenState
                           icon: const Icon(Icons.mic_none_rounded),
                           label: Text(_controller.status ==
                                   SpeechChallengeStatus.complete
-                              ? 'Noch einmal'
-                              : 'Freihändig starten'),
+                              ? context.l10n.again
+                              : context.l10n.startHandsFree),
                         )
                       else
                         OutlinedButton.icon(
                             onPressed: _controller.stop,
                             icon: const Icon(Icons.stop_rounded),
-                            label: const Text('Challenge beenden')),
+                            label: Text(context.l10n.endChallenge)),
                       if (_controller.transcript case final transcript?) ...[
                         const SizedBox(height: AppSpacing.lg),
                         OptionalTranscript(transcript: transcript),
@@ -160,11 +165,11 @@ class _ChallengeSessionScreenState
       );
 
   String _statusText(SpeechChallengeStatus status) => switch (status) {
-        SpeechChallengeStatus.ready => 'Bereit für kurze Impulse?',
-        SpeechChallengeStatus.playing => 'Hör zu',
-        SpeechChallengeStatus.listening => 'Sprich deine Antwort',
-        SpeechChallengeStatus.reflecting => 'Kurze Reflexion …',
-        SpeechChallengeStatus.complete => 'Set abgeschlossen',
-        SpeechChallengeStatus.error => 'Kurz unterbrochen',
+        SpeechChallengeStatus.ready => context.l10n.challengeReady,
+        SpeechChallengeStatus.playing => context.l10n.listen,
+        SpeechChallengeStatus.listening => context.l10n.speakResponse,
+        SpeechChallengeStatus.reflecting => context.l10n.shortReflection,
+        SpeechChallengeStatus.complete => context.l10n.setComplete,
+        SpeechChallengeStatus.error => context.l10n.brieflyInterrupted,
       };
 }

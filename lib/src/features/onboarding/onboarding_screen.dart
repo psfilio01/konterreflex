@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -26,13 +27,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         .completeOnboarding(name);
     if (!mounted || !ref.read(authActionControllerProvider).hasError) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('Dein Profil konnte nicht gespeichert werden.')),
+      SnackBar(content: Text(context.l10n.profileSaveError)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final action = ref.watch(authActionControllerProvider);
     return Scaffold(
       body: SafeArea(
@@ -45,13 +46,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Wie dürfen wir dich ansprechen?',
+                    l10n.onboardingTitle,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Danach trainierst du vor allem mit deiner Stimme. Deinen Namen kannst du später ändern.',
-                  ),
+                  Text(l10n.onboardingBody),
                   const SizedBox(height: 28),
                   TextField(
                     controller: _nameController,
@@ -59,16 +58,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _continue(),
-                    decoration: const InputDecoration(
-                      labelText: 'Vorname oder Anrede',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.displayNameLabel,
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: action.isLoading ? null : _continue,
                     child: Text(
-                        action.isLoading ? 'Wird gespeichert …' : 'Weiter'),
+                        action.isLoading ? l10n.saving : l10n.continueLabel),
                   ),
                 ],
               ),

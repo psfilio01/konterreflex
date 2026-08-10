@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:konterreflex/src/core/localization/app_language.dart';
 
 class AiGatewayResult {
   const AiGatewayResult({
@@ -61,9 +62,13 @@ abstract interface class AiGateway {
 }
 
 class SupabaseAiGateway implements AiGateway {
-  SupabaseAiGateway(this._client);
+  SupabaseAiGateway(
+    this._client, {
+    this.language = AppLanguage.german,
+  });
 
   final SupabaseClient _client;
+  final AppLanguage language;
 
   @override
   Future<AiGatewayResult> invoke({
@@ -74,7 +79,12 @@ class SupabaseAiGateway implements AiGateway {
     try {
       response = await _client.functions.invoke(
         'ai-gateway',
-        body: {'task': task, 'payload': payload, 'schemaVersion': '1'},
+        body: {
+          'task': task,
+          'payload': payload,
+          'responseLanguage': language.code,
+          'schemaVersion': '1',
+        },
       );
     } on FunctionException catch (error) {
       throw AiGatewayException.fromFunctionException(error);

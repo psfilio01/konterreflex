@@ -18,8 +18,12 @@ abstract interface class SpeechChallengeRepository {
 }
 
 class SupabaseSpeechChallengeRepository implements SpeechChallengeRepository {
-  SupabaseSpeechChallengeRepository(this._client);
+  SupabaseSpeechChallengeRepository(
+    this._client, {
+    this.languageCode = 'de',
+  });
   final SupabaseClient _client;
+  final String languageCode;
 
   String get _userId {
     final id = _client.auth.currentUser?.id;
@@ -34,6 +38,7 @@ class SupabaseSpeechChallengeRepository implements SpeechChallengeRepository {
         .select(
             'id,title,description,speech_challenge_prompts(id,remark,context,sort_order)')
         .eq('active', true)
+        .eq('locale', languageCode)
         .order('title');
     return data
         .map(ChallengeSet.fromJson)

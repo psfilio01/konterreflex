@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/features/history/domain/history_item.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,8 +10,10 @@ abstract interface class HistoryRepository {
 }
 
 class SupabaseHistoryRepository implements HistoryRepository {
-  SupabaseHistoryRepository(this._client);
+  SupabaseHistoryRepository(this._client, {AppLocalizations? strings})
+      : _strings = strings ?? lookupAppLocalizations(const Locale('de'));
   final SupabaseClient _client;
+  final AppLocalizations _strings;
   @override
   Future<List<HistoryItem>> fetch() async {
     final sessions = await _client
@@ -25,7 +29,7 @@ class SupabaseHistoryRepository implements HistoryRepository {
         HistoryItem(
           id: item['id'] as String,
           kind: HistoryItemKind.session,
-          title: _sessionTitle(item),
+          title: _sessionTitle(item, _strings),
           createdAt: DateTime.parse(item['started_at'] as String),
           completedAt: item['completed_at'] == null
               ? null
@@ -35,7 +39,7 @@ class SupabaseHistoryRepository implements HistoryRepository {
         HistoryItem(
             id: item['id'] as String,
             kind: HistoryItemKind.realLifeCase,
-            title: 'Erzählte echte Situation',
+            title: _strings.toldRealLifeSituation,
             createdAt: DateTime.parse(item['created_at'] as String)),
     ];
     result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -57,14 +61,14 @@ class SupabaseHistoryRepository implements HistoryRepository {
   }
 }
 
-String _sessionTitle(Map<String, dynamic> item) {
+String _sessionTitle(Map<String, dynamic> item, AppLocalizations strings) {
   final scenario = item['scenario'];
   if (scenario is Map && scenario['title'] is String) {
     return scenario['title'] as String;
   }
   return switch (item['mode']) {
-    'real_life' => 'Wiederholung einer echten Situation',
-    'speech_challenge' => 'Speech Challenge',
-    _ => 'Trainingseinheit',
+    'real_life' => strings.realLifeReplayHistory,
+    'speech_challenge' => strings.speechChallengeTitle,
+    _ => strings.trainingSessionHistory,
   };
 }

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
@@ -36,6 +37,7 @@ class ScenarioSessionController extends ChangeNotifier {
     GoldenBookCaptureService? goldenBookCapture,
     PrivacyAnalytics? analytics,
     String Function()? createId,
+    AppLocalizations? strings,
   })  : _repository = repository,
         _feedbackRepository = feedbackRepository,
         _voice = voice,
@@ -43,7 +45,8 @@ class ScenarioSessionController extends ChangeNotifier {
         _analytics = analytics,
         _createId = createId ?? createClientUuid,
         _sessionClientId = (createId ?? createClientUuid)(),
-        _responseClientId = (createId ?? createClientUuid)() {
+        _responseClientId = (createId ?? createClientUuid)(),
+        _strings = strings ?? lookupAppLocalizations(const Locale('de')) {
     _voice.addListener(_relayVoiceState);
   }
 
@@ -54,6 +57,7 @@ class ScenarioSessionController extends ChangeNotifier {
   final GoldenBookCaptureService? _goldenBookCapture;
   final PrivacyAnalytics? _analytics;
   final String Function() _createId;
+  final AppLocalizations _strings;
   String _sessionClientId;
   String _responseClientId;
   TrainingSessionRecord? _session;
@@ -95,12 +99,11 @@ class ScenarioSessionController extends ChangeNotifier {
         _setStatus(ScenarioSessionStatus.awaitingResponse);
       } else {
         _setError(
-          _voice.snapshot.message ??
-              'Die Szene konnte nicht vollständig abgespielt werden.',
+          _voice.snapshot.message ?? _strings.sceneIncompleteError,
         );
       }
     } catch (_) {
-      _setError('Die Trainingseinheit konnte nicht gestartet werden.');
+      _setError(_strings.trainingStartError);
     }
   }
 
@@ -119,7 +122,7 @@ class ScenarioSessionController extends ChangeNotifier {
     if (_transcript == null) {
       final transcription = await _voice.stopAndTranscribe();
       if (transcription == null) {
-        _setError('Deine Antwort konnte nicht transkribiert werden.');
+        _setError(_strings.transcriptionError);
         return;
       }
       _transcript = transcription.transcript;
@@ -131,7 +134,7 @@ class ScenarioSessionController extends ChangeNotifier {
     final session = _session;
     final transcript = _transcript;
     if (session == null || transcript == null) {
-      _setError('Es gibt noch keine Antwort zum Speichern.');
+      _setError(_strings.nothingToSaveError);
       return;
     }
     _setStatus(ScenarioSessionStatus.processing);
@@ -156,12 +159,12 @@ class ScenarioSessionController extends ChangeNotifier {
             AnalyticsOutcome.completed);
       }
       if (_voice.snapshot.state == VoiceTurnState.processing) {
-        await _voice.presentFeedback(_feedback!.spokenSummary);
+        await _voice.presentFeedback(_feedback!.spokenSummaryFor(_strings));
       }
       _setStatus(ScenarioSessionStatus.feedbackReady);
     } catch (_) {
       _setError(
-        'Feedback und Antwort sind noch nicht vollständig gespeichert. Bitte versuche es erneut.',
+        _strings.feedbackSaveError,
       );
     }
   }
@@ -178,7 +181,7 @@ class ScenarioSessionController extends ChangeNotifier {
         _setStatus(ScenarioSessionStatus.feedbackReady);
       }
     } catch (_) {
-      _setError('Die Rückfrage konnte nicht gestartet werden.');
+      _setError(_strings.followUpStartError);
     }
   }
 
@@ -188,7 +191,7 @@ class ScenarioSessionController extends ChangeNotifier {
     _setStatus(ScenarioSessionStatus.followUpProcessing);
     final question = await _voice.stopAndTranscribe();
     if (question == null) {
-      _setError('Die Rückfrage konnte nicht verstanden werden.');
+      _setError(_strings.followUpUnderstandError);
       return;
     }
     try {
@@ -201,7 +204,7 @@ class ScenarioSessionController extends ChangeNotifier {
       await _voice.presentFeedback(answer);
       _setStatus(ScenarioSessionStatus.feedbackReady);
     } catch (_) {
-      _setError('Die Rückfrage konnte gerade nicht beantwortet werden.');
+      _setError(_strings.followUpAnswerError);
     }
   }
 
@@ -215,7 +218,7 @@ class ScenarioSessionController extends ChangeNotifier {
         _setStatus(ScenarioSessionStatus.goldenBookRecording);
       }
     } catch (_) {
-      _setError('Der Sprachbefehl konnte nicht gestartet werden.');
+      _setError(_strings.voiceCommandStartError);
     }
   }
 
@@ -226,7 +229,7 @@ class ScenarioSessionController extends ChangeNotifier {
     _setStatus(ScenarioSessionStatus.goldenBookProcessing);
     final command = await _voice.stopAndTranscribe();
     if (command == null) {
-      _setError('Der Sprachbefehl konnte nicht verstanden werden.');
+      _setError(_strings.voiceCommandUnderstandError);
       return;
     }
     try {
@@ -241,13 +244,13 @@ class ScenarioSessionController extends ChangeNotifier {
         },
       );
       final spoken = result.saved
-          ? 'Gespeichert: ${result.entry!.phrase}'
+          ? _strings.savedSpoken(result.entry!.phrase)
           : result.clarificationQuestion!;
       if (result.saved) _savedPhrase = result.entry!.phrase;
       await _voice.presentFeedback(spoken);
       _setStatus(ScenarioSessionStatus.feedbackReady);
     } catch (_) {
-      _setError('Die Formulierung konnte nicht gespeichert werden.');
+      _setError(_strings.phraseSaveError);
     }
   }
 
@@ -260,7 +263,7 @@ class ScenarioSessionController extends ChangeNotifier {
       _savedPhrase = entry.phrase;
       notifyListeners();
     } catch (_) {
-      _setError('Die Formulierung konnte nicht gespeichert werden.');
+      _setError(_strings.phraseSaveError);
     }
   }
 

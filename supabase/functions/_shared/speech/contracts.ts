@@ -5,6 +5,7 @@ export interface SynthesizeRequest {
   text: string;
   role: VoiceRole;
   voiceId?: string;
+  languageCode?: "de" | "en";
 }
 
 export interface SynthesizeResult {
@@ -17,7 +18,7 @@ export interface SynthesizeResult {
 export interface TranscribeRequest {
   audio: Uint8Array;
   mimeType: string;
-  languageCode?: string;
+  languageCode?: "de" | "en";
 }
 
 export interface TranscribeResult {

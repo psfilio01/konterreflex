@@ -67,6 +67,7 @@ Deno.test("routes TTS with an explicit voice role", async () => {
         schemaVersion: "1",
         text: "Die Szene beginnt.",
         role: "moderator",
+        languageCode: "en",
       }),
     }),
   );
@@ -74,6 +75,7 @@ Deno.test("routes TTS with an explicit voice role", async () => {
 
   assert(response.status === 200, "expected success");
   assert(provider.synthesized?.role === "moderator", "expected moderator role");
+  assert(provider.synthesized?.languageCode === "en", "expected language");
   assert(body.audioBase64 === "AQID", "expected encoded audio");
   assert(body.model === "mock-tts", "expected model metadata");
 });
@@ -126,7 +128,27 @@ Deno.test("routes short lived audio to configured STT", async () => {
 
   assert(response.status === 200, "expected success");
   assert(provider.transcribed?.audio.length === 3, "expected decoded audio");
+  assert(provider.transcribed?.languageCode === "de", "expected language");
   assert(body.transcript === "Das sehe ich anders.", "expected transcript");
+});
+
+Deno.test("rejects unsupported speech languages", async () => {
+  const provider = new MockSpeechProvider();
+  const response = await handlerFor(provider)(
+    new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "tts",
+        schemaVersion: "1",
+        text: "Bonjour",
+        role: "moderator",
+        languageCode: "fr",
+      }),
+    }),
+  );
+
+  assert(response.status === 400, "expected invalid request");
+  assert(provider.synthesized === null, "provider must not run");
 });
 
 Deno.test("rejects unauthenticated speech before provider use", async () => {

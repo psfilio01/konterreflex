@@ -13,10 +13,15 @@ import {
 
 type Fetch = typeof fetch;
 
-export interface ElevenLabsVoiceConfig {
+export interface ElevenLabsRoleVoices {
   moderator?: string;
   actor?: string;
   intelligence?: string;
+}
+
+export interface ElevenLabsVoiceConfig extends ElevenLabsRoleVoices {
+  de?: ElevenLabsRoleVoices;
+  en?: ElevenLabsRoleVoices;
 }
 
 export class ElevenLabsSpeechProvider
@@ -37,7 +42,11 @@ export class ElevenLabsSpeechProvider
     request: SynthesizeRequest,
     signal: AbortSignal,
   ): Promise<SynthesizeResult> {
-    const voiceId = this.voiceFor(request.role, request.voiceId);
+    const voiceId = this.voiceFor(
+      request.role,
+      request.languageCode ?? "de",
+      request.voiceId,
+    );
     const url = new URL(
       `https://api.elevenlabs.io/v1/text-to-speech/${
         encodeURIComponent(voiceId)
@@ -104,10 +113,14 @@ export class ElevenLabsSpeechProvider
     };
   }
 
-  private voiceFor(role: VoiceRole, actorOverride?: string): string {
+  private voiceFor(
+    role: VoiceRole,
+    languageCode: "de" | "en",
+    actorOverride?: string,
+  ): string {
     const voice = role === "actor" && actorOverride
       ? actorOverride
-      : this.voices[role];
+      : this.voices[languageCode]?.[role] ?? this.voices[role];
     if (!voice || !/^[A-Za-z0-9_-]{8,64}$/.test(voice)) {
       throw new SpeechProviderError("configuration");
     }

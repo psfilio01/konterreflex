@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:konterreflex/src/core/analytics/analytics_providers.dart';
 import 'package:konterreflex/src/core/analytics/privacy_analytics.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/core/routing/app_router.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
@@ -12,50 +13,50 @@ import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  static const _modes = [
-    _HomeMode(
-      route: AppRoute.training,
-      title: 'Training',
-      description: 'Alltagssituationen sicher durchspielen',
-      icon: Icons.forum_outlined,
-      analyticsFeature: AnalyticsFeature.training,
-    ),
-    _HomeMode(
-      route: AppRoute.realLife,
-      title: 'Echte Situation',
-      description: 'Erlebtes rekonstruieren und neu beantworten',
-      icon: Icons.replay_rounded,
-      analyticsFeature: AnalyticsFeature.realLife,
-    ),
-    _HomeMode(
-      route: AppRoute.speechChallenge,
-      title: 'Speech Challenge',
-      description: 'Kurz und spontan auf einen Impuls reagieren',
-      icon: Icons.bolt_outlined,
-      analyticsFeature: AnalyticsFeature.speechChallenge,
-    ),
-    _HomeMode(
-      route: AppRoute.goldenBook,
-      title: 'Golden Book',
-      description: 'Starke Formulierungen griffbereit sammeln',
-      icon: Icons.auto_stories_outlined,
-      analyticsFeature: AnalyticsFeature.goldenBook,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final modes = [
+      _HomeMode(
+        route: AppRoute.training,
+        title: 'Training',
+        description: l10n.homeTrainingDescription,
+        icon: Icons.forum_outlined,
+        analyticsFeature: AnalyticsFeature.training,
+      ),
+      _HomeMode(
+        route: AppRoute.realLife,
+        title: l10n.realLifeTitle,
+        description: l10n.homeRealLifeDescription,
+        icon: Icons.replay_rounded,
+        analyticsFeature: AnalyticsFeature.realLife,
+      ),
+      _HomeMode(
+        route: AppRoute.speechChallenge,
+        title: l10n.speechChallengeTitle,
+        description: l10n.homeSpeechChallengeDescription,
+        icon: Icons.bolt_outlined,
+        analyticsFeature: AnalyticsFeature.speechChallenge,
+      ),
+      _HomeMode(
+        route: AppRoute.goldenBook,
+        title: l10n.goldenBookTitle,
+        description: l10n.homeGoldenBookDescription,
+        icon: Icons.auto_stories_outlined,
+        analyticsFeature: AnalyticsFeature.goldenBook,
+      ),
+    ];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Konterreflex'),
         actions: [
           IconButton(
-            tooltip: 'Verlauf',
+            tooltip: l10n.historyTitle,
             onPressed: () => context.pushNamed(AppRoute.history),
             icon: const Icon(Icons.history_rounded),
           ),
           IconButton(
-            tooltip: 'Einstellungen',
+            tooltip: l10n.settingsTitle,
             onPressed: () => context.pushNamed(AppRoute.settings),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -86,13 +87,13 @@ class HomeScreen extends ConsumerWidget {
                       IntelligenceOrb(size: orbSize),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
-                        'Was möchtest du trainieren?',
+                        l10n.homeQuestion,
                         style: Theme.of(context).textTheme.headlineMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Hören. Reagieren. Reflektieren. Wiederholen.',
+                        l10n.homeTagline,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: AppColors.muted,
                             ),
@@ -103,7 +104,7 @@ class HomeScreen extends ConsumerWidget {
                         spacing: AppSpacing.lg,
                         runSpacing: AppSpacing.md,
                         children: [
-                          for (final mode in _modes)
+                          for (final mode in modes)
                             SizedBox(
                               width: cardWidth,
                               child: _HomeModeCard(

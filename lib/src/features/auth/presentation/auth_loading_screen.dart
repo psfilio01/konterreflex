@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 
 class AuthLoadingScreen extends StatelessWidget {
   const AuthLoadingScreen({super.key});
@@ -11,19 +12,19 @@ class AuthLoadingScreen extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: Semantics(
-            label: 'Anmeldung wird geprüft',
-            child: const Column(
+            label: context.l10n.authChecking,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IntelligenceOrb(
+                const IntelligenceOrb(
                   size: 88,
                   state: IntelligenceOrbState.thinking,
                   showStatusLabel: false,
                 ),
-                SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.md),
                 Text(
-                  'Einen Moment …',
-                  style: TextStyle(
+                  context.l10n.oneMoment,
+                  style: const TextStyle(
                     color: AppColors.muted,
                     fontSize: 16,
                   ),

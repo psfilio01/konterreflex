@@ -4,12 +4,17 @@ import 'dart:typed_data';
 
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
+import 'package:konterreflex/src/core/localization/app_language.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseSpeechGateway implements SpeechGateway {
-  SupabaseSpeechGateway(this._client);
+  SupabaseSpeechGateway(
+    this._client, {
+    this.language = AppLanguage.german,
+  });
 
   final SupabaseClient _client;
+  final AppLanguage language;
 
   @override
   Future<SpeechClip> synthesize(SpeechLine line) async {
@@ -18,6 +23,7 @@ class SupabaseSpeechGateway implements SpeechGateway {
       'schemaVersion': '1',
       'text': line.text,
       'role': line.role.name,
+      'languageCode': language.code,
       if (line.voiceId != null) 'voiceId': line.voiceId,
     });
     final data = _responseMap(response);
@@ -51,7 +57,7 @@ class SupabaseSpeechGateway implements SpeechGateway {
       'schemaVersion': '1',
       'audioBase64': base64Encode(audio.bytes),
       'mimeType': audio.mimeType,
-      'languageCode': 'de',
+      'languageCode': language.code,
     });
     final data = _responseMap(response);
     final transcript = data['transcript'];

@@ -22,6 +22,11 @@ Users save useful phrases, words, rhetorical patterns and personal favorites by 
 ## Feedback
 Never reduce performance to a numerical score. Use concise qualitative language. Evaluate contextually across posture, precision, frame, social effect, naturalness and escalation fit.
 
+The signed-in user chooses one app language in Settings. That one choice
+controls labels, curated training content, speech recognition, spoken voices
+and all user-facing AI output. German is the default; German and English are
+currently supported.
+
 ## AI persona
 Do not portray a human coach. The product is an abstract conversational intelligence represented by a responsive orb or bubble.
 

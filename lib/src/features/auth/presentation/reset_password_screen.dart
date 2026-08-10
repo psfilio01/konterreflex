@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
+import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/auth/domain/auth_credentials.dart';
 import 'package:konterreflex/src/features/auth/domain/auth_error_messages.dart';
@@ -27,9 +28,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   }
 
   Future<void> _update() async {
+    final l10n = context.l10n;
     final password = _passwordController.text;
-    final validationError = validatePassword(password) ??
-        validatePasswordConfirmation(password, _confirmationController.text);
+    final validationError = validatePassword(password, strings: l10n) ??
+        validatePasswordConfirmation(
+          password,
+          _confirmationController.text,
+          strings: l10n,
+        );
     if (validationError != null) {
       _showMessage(validationError);
       return;
@@ -44,12 +50,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       _showMessage(
         authErrorMessageFor(
           action.error!,
-          fallback: 'Das Passwort konnte nicht geändert werden.',
+          fallback: l10n.passwordUpdateError,
+          strings: l10n,
         ),
       );
       return;
     }
-    _showMessage('Dein Passwort wurde geändert.');
+    _showMessage(l10n.passwordUpdated);
   }
 
   void _showMessage(String message) {
@@ -60,6 +67,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final action = ref.watch(authActionControllerProvider);
     final user = ref.watch(authUserProvider).asData?.value;
     return Scaffold(
@@ -74,13 +82,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Neues Passwort',
+                    l10n.newPassword,
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const Text(
-                    'Lege ein neues Passwort mit mindestens 8 Zeichen fest.',
+                  Text(
+                    l10n.newPasswordBody,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -94,7 +102,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       autofillHints: const [AutofillHints.newPassword],
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: 'Neues Passwort',
+                        labelText: l10n.newPassword,
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           onPressed: () => setState(
@@ -117,7 +125,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _update(),
                       decoration: InputDecoration(
-                        labelText: 'Passwort wiederholen',
+                        labelText: l10n.repeatPassword,
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           onPressed: () => setState(
@@ -135,9 +143,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     FilledButton(
                       onPressed: action.isLoading ? null : _update,
                       child: Text(
-                        action.isLoading
-                            ? 'Bitte warten …'
-                            : 'Passwort speichern',
+                        action.isLoading ? l10n.pleaseWait : l10n.savePassword,
                       ),
                     ),
                   ],
