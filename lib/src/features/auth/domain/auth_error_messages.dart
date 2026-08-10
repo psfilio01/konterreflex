@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Maps auth provider errors to calm German product copy.
+/// Maps provider errors to calm German product copy without exposing internals.
 String authErrorMessageFor(Object error, {required String fallback}) {
   if (error is! AuthException) return fallback;
 
@@ -12,18 +12,33 @@ String authErrorMessageFor(Object error, {required String fallback}) {
       code.contains('rate_limit') ||
       message.contains('rate limit') ||
       message.contains('over_email')) {
-    return 'Zu viele E-Mails in kurzer Zeit. Bitte warte etwa eine Stunde oder nutze einen bereits gesendeten Link.';
+    return 'Zu viele Versuche in kurzer Zeit. Bitte warte einen Moment und versuche es erneut.';
   }
-  if (message.contains('invalid login') || message.contains('invalid email')) {
-    return 'Bitte prüfe die E-Mail-Adresse.';
+  if (message.contains('invalid login credentials') ||
+      code.contains('invalid_credentials')) {
+    return 'E-Mail-Adresse oder Passwort stimmen nicht.';
   }
-  if (message.contains('expired') || code.contains('otp_expired')) {
-    return 'Der Anmeldelink ist abgelaufen. Bitte fordere einen neuen an.';
+  if (message.contains('email not confirmed')) {
+    return 'Bitte bestätige zuerst deine E-Mail-Adresse.';
   }
-  if (message.contains('flow state') ||
-      message.contains('code verifier') ||
-      message.contains('pkce')) {
-    return 'Der Anmeldelink ist nicht mehr gültig. Bitte fordere einen neuen an und kopiere ihn in die App.';
+  if (message.contains('weak password') || code.contains('weak_password')) {
+    return 'Das Passwort ist nicht sicher genug. Verwende mindestens 8 Zeichen.';
+  }
+  if (message.contains('user already registered') ||
+      code.contains('user_already_exists')) {
+    return 'Für diese E-Mail-Adresse besteht bereits ein Konto.';
+  }
+  if (message.contains('same password')) {
+    return 'Das neue Passwort muss sich vom bisherigen unterscheiden.';
+  }
+  if (message.contains('provider is not enabled') ||
+      message.contains('unsupported provider')) {
+    return 'Diese Anmeldung ist noch nicht freigeschaltet.';
+  }
+  if (message.contains('expired') ||
+      code.contains('otp_expired') ||
+      message.contains('flow state')) {
+    return 'Die Anfrage ist abgelaufen. Bitte starte den Vorgang erneut.';
   }
   return fallback;
 }

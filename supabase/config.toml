@@ -29,8 +29,8 @@ backend = "postgres"
 
 [auth]
 enabled = true
-site_url = "konterreflex://login-callback"
-additional_redirect_urls = ["konterreflex://login-callback", "http://localhost:3000/**"]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["konterreflex://auth-callback", "konterreflex://reset-password", "http://localhost:3000/**"]
 jwt_expiry = 3600
 
 [auth.email]
@@ -39,13 +39,25 @@ enable_confirmations = true
 otp_length = 8
 otp_expiry = 3600
 
-[auth.email.template.magic_link]
-subject = "Dein Anmeldecode für Konterreflex"
-content_path = "./supabase/templates/magic_link.html"
-
 [auth.email.template.confirmation]
-subject = "Dein Anmeldecode für Konterreflex"
+subject = "Bestätige dein Konterreflex-Konto"
 content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Setze dein Konterreflex-Passwort zurück"
+content_path = "./supabase/templates/recovery.html"
+
+# OAuth providers remain disabled locally until their credentials are supplied.
+# Production credentials belong in Supabase Auth provider settings, never here.
+[auth.external.google]
+enabled = false
+client_id = ""
+secret = ""
+
+[auth.external.apple]
+enabled = false
+client_id = ""
+secret = ""
 
 [functions.ai-gateway]
 enabled = true

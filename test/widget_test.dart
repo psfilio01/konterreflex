@@ -19,6 +19,7 @@ void main() {
       ProviderScope(
         overrides: [
           authUserProvider.overrideWith((ref) => Stream.value(testUser)),
+          passwordRecoveryProvider.overrideWith((ref) => Stream.value(false)),
           profileProvider.overrideWith(
             (ref) async => const UserProfile(
               id: 'user-1',
@@ -45,6 +46,7 @@ void main() {
       ProviderScope(
         overrides: [
           authUserProvider.overrideWith((ref) => Stream.value(null)),
+          passwordRecoveryProvider.overrideWith((ref) => Stream.value(false)),
           profileProvider.overrideWith((ref) async => null),
         ],
         child: const KonterreflexApp(),
@@ -52,8 +54,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Willkommen bei Konterreflex'), findsOneWidget);
-    expect(find.text('Anmeldelink senden'), findsOneWidget);
+    expect(find.text('Willkommen zurück'), findsOneWidget);
+    expect(find.text('Anmelden'), findsOneWidget);
+    expect(find.text('Mit Google fortfahren'), findsOneWidget);
+    expect(find.text('Mit Apple fortfahren'), findsOneWidget);
   });
 
   testWidgets('new users must complete onboarding', (tester) async {
@@ -61,6 +65,7 @@ void main() {
       ProviderScope(
         overrides: [
           authUserProvider.overrideWith((ref) => Stream.value(testUser)),
+          passwordRecoveryProvider.overrideWith((ref) => Stream.value(false)),
           profileProvider.overrideWith(
             (ref) async => const UserProfile(id: 'user-1', locale: 'de'),
           ),
@@ -72,5 +77,28 @@ void main() {
 
     expect(find.text('Wie dürfen wir dich ansprechen?'), findsOneWidget);
     expect(find.byTooltip('Einstellungen'), findsNothing);
+  });
+
+  testWidgets('password recovery opens the new password form', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authUserProvider.overrideWith((ref) => Stream.value(testUser)),
+          passwordRecoveryProvider.overrideWith((ref) => Stream.value(true)),
+          profileProvider.overrideWith(
+            (ref) async => const UserProfile(
+              id: 'user-1',
+              locale: 'de',
+              displayName: 'Ada',
+            ),
+          ),
+        ],
+        child: const KonterreflexApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Neues Passwort'), findsWidgets);
+    expect(find.text('Passwort speichern'), findsOneWidget);
   });
 }

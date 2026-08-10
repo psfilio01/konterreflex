@@ -6,7 +6,6 @@ import 'package:konterreflex/src/app.dart';
 import 'package:konterreflex/src/core/config/app_config.dart';
 import 'package:konterreflex/src/core/observability/error_reporter.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
-import 'package:konterreflex/src/features/auth/data/auth_deep_link.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
@@ -102,17 +101,11 @@ class _KonterreflexBootstrapState extends ConsumerState<KonterreflexBootstrap> {
 }
 
 Future<void> bootstrapKonterreflex() async {
-  final deepLinks = AuthDeepLinkCoordinator();
-  konterreflexDeepLinks = deepLinks;
   final config = AppConfig.fromEnvironment();
   await Supabase.initialize(
     url: config.supabaseUrl,
     publishableKey: config.supabasePublishableKey,
-    authOptions: const FlutterAuthClientOptions(
-      detectSessionInUri: false,
-    ),
   );
-  unawaited(deepLinks.attach(Supabase.instance.client));
 }
 
 class _BootstrapLoadingView extends StatelessWidget {

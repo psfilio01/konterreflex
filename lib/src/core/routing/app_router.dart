@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
+import 'package:konterreflex/src/features/auth/presentation/reset_password_screen.dart';
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
 import 'package:konterreflex/src/features/home/home_screen.dart';
 import 'package:konterreflex/src/features/history/presentation/history_screen.dart';
@@ -20,6 +21,7 @@ import 'package:konterreflex/src/features/training/presentation/training_screen.
 abstract final class AppRoute {
   static const home = 'home';
   static const signIn = 'sign-in';
+  static const resetPassword = 'reset-password';
   static const onboarding = 'onboarding';
   static const settings = 'settings';
   static const training = 'training';
@@ -40,6 +42,7 @@ class _RouterAuthRefresh extends ChangeNotifier {
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = _RouterAuthRefresh();
   ref.listen(authUserProvider, (_, __) => refresh.notify());
+  ref.listen(passwordRecoveryProvider, (_, __) => refresh.notify());
   ref.listen(profileProvider, (_, __) => refresh.notify());
   ref.onDispose(refresh.dispose);
 
@@ -48,6 +51,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final authUser = ref.read(authUserProvider);
+      final passwordRecovery = ref.read(passwordRecoveryProvider);
       final profile = ref.read(profileProvider);
       final location = state.matchedLocation;
 
@@ -59,6 +63,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final user = authUser.asData?.value ?? authUser.valueOrNull;
       if (user == null) {
         return location == '/sign-in' ? null : '/sign-in';
+      }
+
+      if (passwordRecovery.asData?.value ?? false) {
+        return location == '/reset-password' ? null : '/reset-password';
       }
 
       if (profile.isLoading) {
@@ -94,6 +102,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/sign-in',
         name: AppRoute.signIn,
         builder: (context, state) => const SignInScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        name: AppRoute.resetPassword,
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       GoRoute(
         path: '/onboarding',

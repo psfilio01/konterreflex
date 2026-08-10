@@ -11,7 +11,26 @@ void main() {
     );
     expect(
       authErrorMessageFor(error, fallback: 'fallback'),
-      contains('Zu viele E-Mails'),
+      contains('Zu viele Versuche'),
+    );
+  });
+
+  test('does not expose raw invalid credential errors', () {
+    const error = AuthException(
+      'Invalid login credentials',
+      code: 'invalid_credentials',
+    );
+    expect(
+      authErrorMessageFor(error, fallback: 'fallback'),
+      'E-Mail-Adresse oder Passwort stimmen nicht.',
+    );
+  });
+
+  test('explains disabled social providers without technical details', () {
+    const error = AuthException('Unsupported provider: google');
+    expect(
+      authErrorMessageFor(error, fallback: 'fallback'),
+      'Diese Anmeldung ist noch nicht freigeschaltet.',
     );
   });
 }

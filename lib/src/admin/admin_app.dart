@@ -4,6 +4,7 @@ import 'package:konterreflex/src/admin/scenarios/application/admin_scenario_prov
 import 'package:konterreflex/src/admin/scenarios/presentation/admin_scenario_studio.dart';
 import 'package:konterreflex/src/core/theme/app_theme.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
+import 'package:konterreflex/src/features/auth/presentation/reset_password_screen.dart';
 import 'package:konterreflex/src/features/auth/presentation/sign_in_screen.dart';
 
 class KonterreflexAdminApp extends StatelessWidget {
@@ -22,6 +23,10 @@ class AdminGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authUserProvider);
+    final passwordRecovery = ref.watch(passwordRecoveryProvider);
+    if (passwordRecovery.asData?.value ?? false) {
+      return const ResetPasswordScreen();
+    }
     return auth.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),

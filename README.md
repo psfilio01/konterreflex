@@ -48,6 +48,7 @@ Release preparation is documented in:
 
 - `docs/RELEASE_CHECKLIST.md` — all automated and manual launch gates
 - `docs/ENVIRONMENT.md` — public configuration and server-side secrets
+- `docs/AUTH.md` — password, Google and Apple Auth setup
 - `docs/STORE_BUILDS.md` — Android/iOS build and subscription blockers
 - `docs/ADMIN_DEPLOYMENT.md` — isolated admin web deployment
 
