@@ -34,19 +34,23 @@ class SpeechChallengeScreen extends ConsumerWidget {
               const Text(
                   'Kurze Impulse, gesprochene Antworten und direktes qualitatives Feedback.'),
               const SizedBox(height: AppSpacing.lg),
-              for (final set in items)
+              for (var index = 0; index < items.length; index++) ...[
                 Card(
                   child: ListTile(
-                    title: Text(set.title),
-                    subtitle: Text(set.description),
+                    title: Text(items[index].title),
+                    subtitle: Text(items[index].description),
                     trailing: const Icon(Icons.arrow_forward_rounded),
                     onTap: () =>
                         Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) =>
-                          _ChallengeSessionScreen(challengeSet: set),
+                      builder: (_) => _ChallengeSessionScreen(
+                        challengeSet: items[index],
+                      ),
                     )),
                   ),
                 ),
+                if (index < items.length - 1)
+                  const SizedBox(height: AppSpacing.md),
+              ],
             ],
           ),
           error: (_, __) => const Center(
