@@ -1,29 +1,15 @@
 import { AiTask } from "../contracts.ts";
 import { JsonSchema } from "./schema.ts";
-import conversationReplyV1 from "../../../prompts/conversation_reply_v1.md" with {
-  type: "text",
-};
-import goldenBookExtractV1 from "../../../prompts/golden_book_extract_v1.md" with {
-  type: "text",
-};
-import realLifeExtractV1 from "../../../prompts/real_life_extract_v1.md" with {
-  type: "text",
-};
-import realLifeReconstructV1 from "../../../prompts/real_life_reconstruct_v1.md" with {
-  type: "text",
-};
-import responseEvaluateV2 from "../../../prompts/response_evaluate_v2.md" with {
-  type: "text",
-};
-import scenarioGenerateV2 from "../../../prompts/scenario_generate_v2.md" with {
-  type: "text",
-};
-import scenarioPersonalizeV1 from "../../../prompts/scenario_personalize_v1.md" with {
-  type: "text",
-};
-import scenarioSafetyReviewV1 from "../../../prompts/scenario_safety_review_v1.md" with {
-  type: "text",
-};
+import {
+  conversationReplyV1,
+  goldenBookExtractV1,
+  realLifeExtractV1,
+  realLifeReconstructV1,
+  responseEvaluateV2,
+  scenarioGenerateV2,
+  scenarioPersonalizeV1,
+  scenarioSafetyReviewV1,
+} from "./generated_prompts.ts";
 
 export interface AiTaskDefinition {
   task: AiTask;

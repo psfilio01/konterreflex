@@ -49,6 +49,8 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.3
+      - name: Check generated AI prompts
+        run: deno run --allow-read scripts/generate_ai_prompts.ts --check
       - run: deno fmt --check supabase/functions
       - run: deno check supabase/functions/*/index.ts
       - run: deno test --allow-env supabase/functions
