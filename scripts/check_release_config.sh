@@ -32,7 +32,7 @@ fi
 
 require_variable APP_ENV
 require_variable SUPABASE_URL
-require_variable SUPABASE_ANON_KEY
+require_variable SUPABASE_PUBLISHABLE_KEY
 require_variable GEMINI_API_KEY
 require_variable ELEVENLABS_API_KEY
 require_variable ELEVENLABS_VOICE_ACTOR
@@ -58,7 +58,7 @@ case "${BILLING_RETURN_URL:-}" in
   *) fail "BILLING_RETURN_URL must use HTTPS" ;;
 esac
 
-for name in SUPABASE_ANON_KEY GEMINI_API_KEY ELEVENLABS_API_KEY \
+for name in SUPABASE_PUBLISHABLE_KEY GEMINI_API_KEY ELEVENLABS_API_KEY \
   STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_PRO_PRICE_ID; do
   value="${!name:-}"
   case "$value" in

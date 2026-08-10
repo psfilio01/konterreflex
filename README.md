@@ -13,10 +13,12 @@ cp .env.local.example .env.local
 supabase status
 ```
 
-Copy the local API URL and anon key printed by `supabase status` into
-`.env.local`. The file contains public Flutter client configuration only and is
-ignored by Git. Provider and billing secrets belong in local server environment
-files or Supabase secrets; never pass them to Flutter.
+Copy the local API URL and publishable key into `.env.local`
+(`SUPABASE_PUBLISHABLE_KEY`). Local `supabase status` may still label it as the
+anon key; for hosted projects use the Dashboard **API Keys → Publishable key**.
+The file contains public Flutter client configuration only and is ignored by
+Git. Provider and billing secrets belong in local server environment files or
+Supabase secrets; never pass them to Flutter.
 
 Start the mobile app or web app with:
 

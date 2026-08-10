@@ -10,7 +10,7 @@ Flutter `--dart-define` or a web build.
 | --- | --- | --- |
 | `APP_ENV` | all | `development`, `staging`, or `production` |
 | `SUPABASE_URL` | all | Public project API URL |
-| `SUPABASE_ANON_KEY` | all | Public publishable/anon client key |
+| `SUPABASE_PUBLISHABLE_KEY` | all | Public publishable client key (`sb_publishable_...`) |
 
 Production startup rejects HTTP, local Supabase URLs and obvious placeholder
 keys. `.env.local.example` is safe to copy for local work; the resulting
@@ -21,7 +21,7 @@ flutter run --dart-define-from-file=.env.local
 flutter build web --release \
   --dart-define=APP_ENV=production \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=PUBLIC_KEY
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=PUBLIC_KEY
 ```
 
 Values passed to a web build are public by definition. CI uses non-secret dummy

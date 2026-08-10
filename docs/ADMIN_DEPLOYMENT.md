@@ -14,7 +14,7 @@ flutter test
 flutter build web --release -t lib/main_admin.dart \
   --dart-define=APP_ENV=production \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=PUBLIC_KEY
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=PUBLIC_KEY
 ```
 
 Deploy `build/web` to a static HTTPS host. Build the user web app separately;

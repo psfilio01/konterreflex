@@ -21,7 +21,7 @@ Future<void> main() async {
     final config = AppConfig.fromEnvironment();
     await Supabase.initialize(
       url: config.supabaseUrl,
-      publishableKey: config.supabaseAnonKey,
+      publishableKey: config.supabasePublishableKey,
     );
     runApp(const ProviderScope(child: KonterreflexAdminApp()));
   } catch (error) {

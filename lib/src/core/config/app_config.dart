@@ -18,7 +18,7 @@ enum AppEnvironment {
 class AppConfig {
   AppConfig({
     required this.supabaseUrl,
-    required this.supabaseAnonKey,
+    required this.supabasePublishableKey,
     this.environment = AppEnvironment.development,
   }) {
     final uri = Uri.tryParse(supabaseUrl);
@@ -29,35 +29,41 @@ class AppConfig {
         'SUPABASE_URL must be an absolute http(s) URL.',
       );
     }
-    if (supabaseAnonKey.trim().isEmpty) {
-      throw const FormatException('SUPABASE_ANON_KEY must not be empty.');
+    if (supabasePublishableKey.trim().isEmpty) {
+      throw const FormatException(
+        'SUPABASE_PUBLISHABLE_KEY must not be empty.',
+      );
     }
 
     if (environment == AppEnvironment.production) {
-      _validateProduction(uri, supabaseAnonKey);
+      _validateProduction(uri, supabasePublishableKey);
     }
   }
 
   factory AppConfig.fromEnvironment() {
     const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-    const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+    const publishableKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+    // Legacy alias still accepted while local CLI / older env files catch up.
+    const legacyAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
     const environment = String.fromEnvironment(
       'APP_ENV',
       defaultValue: 'development',
     );
 
+    final key = publishableKey.isNotEmpty ? publishableKey : legacyAnonKey;
+
     return AppConfig(
       supabaseUrl: supabaseUrl,
-      supabaseAnonKey: supabaseAnonKey,
+      supabasePublishableKey: key,
       environment: AppEnvironment.parse(environment),
     );
   }
 
   final String supabaseUrl;
-  final String supabaseAnonKey;
+  final String supabasePublishableKey;
   final AppEnvironment environment;
 
-  static void _validateProduction(Uri uri, String anonKey) {
+  static void _validateProduction(Uri uri, String publishableKey) {
     final host = uri.host.toLowerCase();
     if (uri.scheme != 'https') {
       throw const FormatException('Production SUPABASE_URL must use HTTPS.');
@@ -71,11 +77,11 @@ class AppConfig {
       );
     }
 
-    final normalizedKey = anonKey.trim().toLowerCase();
+    final normalizedKey = publishableKey.trim().toLowerCase();
     const placeholderParts = ['replace', 'change-me', 'placeholder'];
     if (placeholderParts.any(normalizedKey.contains)) {
       throw const FormatException(
-        'Production SUPABASE_ANON_KEY must not be a placeholder.',
+        'Production SUPABASE_PUBLISHABLE_KEY must not be a placeholder.',
       );
     }
   }

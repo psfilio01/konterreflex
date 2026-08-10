@@ -15,7 +15,7 @@ flutter test
 flutter build appbundle --release \
   --dart-define=APP_ENV=production \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=PUBLIC_KEY
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=PUBLIC_KEY
 ```
 
 Upload `build/app/outputs/bundle/release/app-release.aab` first to an internal
@@ -34,7 +34,7 @@ flutter test
 flutter build ipa --release \
   --dart-define=APP_ENV=production \
   --dart-define=SUPABASE_URL=https://PROJECT.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=PUBLIC_KEY
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=PUBLIC_KEY
 ```
 
 Upload the archive with Xcode or Transporter and validate it in TestFlight.

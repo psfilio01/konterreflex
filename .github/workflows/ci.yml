@@ -32,13 +32,13 @@ jobs:
           flutter build web --release
           --dart-define=APP_ENV=production
           --dart-define=SUPABASE_URL=https://ci.supabase.co
-          --dart-define=SUPABASE_ANON_KEY=sb_publishable_ci_public
+          --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_public
       - name: Build admin web app
         run: >-
           flutter build web --release -t lib/main_admin.dart
           --dart-define=APP_ENV=production
           --dart-define=SUPABASE_URL=https://ci.supabase.co
-          --dart-define=SUPABASE_ANON_KEY=sb_publishable_ci_public
+          --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_public
 
   edge-functions:
     name: Supabase function checks

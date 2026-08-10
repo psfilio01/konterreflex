@@ -6,26 +6,32 @@ void main() {
     test('accepts a public Supabase client configuration', () {
       final config = AppConfig(
         supabaseUrl: 'http://127.0.0.1:55421',
-        supabaseAnonKey: 'public-anon-key',
+        supabasePublishableKey: 'sb_publishable_public-client-key',
       );
 
       expect(config.supabaseUrl, 'http://127.0.0.1:55421');
-      expect(config.supabaseAnonKey, 'public-anon-key');
+      expect(
+        config.supabasePublishableKey,
+        'sb_publishable_public-client-key',
+      );
       expect(config.environment, AppEnvironment.development);
     });
 
     test('rejects a missing URL', () {
       expect(
-        () => AppConfig(supabaseUrl: '', supabaseAnonKey: 'public-anon-key'),
+        () => AppConfig(
+          supabaseUrl: '',
+          supabasePublishableKey: 'sb_publishable_public-client-key',
+        ),
         throwsFormatException,
       );
     });
 
-    test('rejects a missing anon key', () {
+    test('rejects a missing publishable key', () {
       expect(
         () => AppConfig(
           supabaseUrl: 'http://127.0.0.1:55421',
-          supabaseAnonKey: '',
+          supabasePublishableKey: '',
         ),
         throwsFormatException,
       );
@@ -34,7 +40,7 @@ void main() {
     test('accepts an HTTPS production configuration', () {
       final config = AppConfig(
         supabaseUrl: 'https://project.supabase.co',
-        supabaseAnonKey: 'sb_publishable_public-client-key',
+        supabasePublishableKey: 'sb_publishable_public-client-key',
         environment: AppEnvironment.production,
       );
 
@@ -49,7 +55,7 @@ void main() {
         expect(
           () => AppConfig(
             supabaseUrl: url,
-            supabaseAnonKey: 'sb_publishable_public-client-key',
+            supabasePublishableKey: 'sb_publishable_public-client-key',
             environment: AppEnvironment.production,
           ),
           throwsFormatException,
@@ -61,7 +67,7 @@ void main() {
       expect(
         () => AppConfig(
           supabaseUrl: 'https://project.supabase.co',
-          supabaseAnonKey: 'replace-with-production-key',
+          supabasePublishableKey: 'replace-with-production-key',
           environment: AppEnvironment.production,
         ),
         throwsFormatException,

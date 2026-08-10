@@ -4,8 +4,8 @@ import { SpeechProviderRegistry } from "../_shared/speech/provider_registry.ts";
 import { createSpeechGatewayHandler } from "./handler.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
-const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") ??
-  Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+const supabaseKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+  Deno.env.get("SUPABASE_ANON_KEY");
 if (!supabaseUrl || !supabaseKey) {
   throw new Error("Missing Supabase server configuration.");
 }
