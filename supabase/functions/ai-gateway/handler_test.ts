@@ -54,6 +54,26 @@ Deno.test("routes an approved task and returns trace metadata", async () => {
   assert(body.requestId === "request-1", "expected request trace");
 });
 
+Deno.test("creates a request ID with the production default", async () => {
+  const provider = new MockAiProvider({ reply: "Das sehe ich anders." });
+  const handler = createAiGatewayHandler({
+    authenticate: async () => true,
+    providerId: "mock",
+    providers: new AiProviderRegistry([provider]),
+    loadPrompt: async (definition) => `Prompt ${definition.promptVersion}`,
+  });
+  const response = await handler(request());
+  const body = await response.json();
+
+  assert(response.status === 200, "expected success");
+  assert(
+    typeof body.requestId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        .test(body.requestId),
+    "expected a generated UUID request ID",
+  );
+});
+
 Deno.test("rejects provider output that does not match the task schema", async () => {
   const provider = new MockAiProvider({ text: "wrong property" });
   const response = await handlerFor(provider)(request());

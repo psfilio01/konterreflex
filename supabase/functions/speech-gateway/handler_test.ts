@@ -78,6 +78,36 @@ Deno.test("routes TTS with an explicit voice role", async () => {
   assert(body.model === "mock-tts", "expected model metadata");
 });
 
+Deno.test("creates a request ID with the production default", async () => {
+  const provider = new MockSpeechProvider();
+  const handler = createSpeechGatewayHandler({
+    authenticate: async () => true,
+    providers: new SpeechProviderRegistry({ tts: [provider], stt: [provider] }),
+    ttsProviderId: "mock",
+    sttProviderId: "mock",
+  });
+  const response = await handler(
+    new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "tts",
+        schemaVersion: "1",
+        text: "Die Szene beginnt.",
+        role: "moderator",
+      }),
+    }),
+  );
+  const body = await response.json();
+
+  assert(response.status === 200, "expected success");
+  assert(
+    typeof body.requestId === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        .test(body.requestId),
+    "expected a generated UUID request ID",
+  );
+});
+
 Deno.test("routes short lived audio to configured STT", async () => {
   const provider = new MockSpeechProvider();
   const response = await handlerFor(provider)(
