@@ -39,6 +39,7 @@ class RealLifeReplayController extends ChangeNotifier {
     required RealLifeAiService ai,
     required RealLifeRepository repository,
     required FeedbackRepository feedbackRepository,
+    this.languageCode = 'de',
     String Function()? createId,
     AppLocalizations? strings,
   })  : _permission = permission,
@@ -78,6 +79,7 @@ class RealLifeReplayController extends ChangeNotifier {
   final FeedbackRepository _feedbackRepository;
   final String Function() _createId;
   final AppLocalizations _strings;
+  final String languageCode;
   String _caseClientId;
   String _sessionClientId;
   String _responseClientId;
@@ -85,12 +87,14 @@ class RealLifeReplayController extends ChangeNotifier {
   RealLifeReplayStatus _status = RealLifeReplayStatus.ready;
   RealLifeExtraction? _extraction;
   RealLifeCaseRecord? _case;
+  RealLifeReconstruction? _reconstruction;
   TrainingScenario? _scenario;
   String? _sourceTranscript;
   String? _responseTranscript;
   QualitativeFeedback? _feedback;
   String? _message;
   int _followUpCount = 0;
+  String? _loadedCaseId;
   final ValueNotifier<double> voiceActivity = ValueNotifier(0);
   StreamSubscription<double>? _recorderActivitySubscription;
   StreamSubscription<double>? _playbackActivitySubscription;
@@ -102,6 +106,9 @@ class RealLifeReplayController extends ChangeNotifier {
   String? get responseTranscript => _responseTranscript;
   QualitativeFeedback? get feedback => _feedback;
   String? get message => _message;
+  bool get canRetryReconstructionSave =>
+      _reconstruction != null && _case == null && _sourceTranscript != null;
+  bool get isSavedCase => _loadedCaseId != null;
   String? get nextEssentialQuestion =>
       _followUpCount < 2 ? _extraction?.unresolvedQuestions.firstOrNull : null;
 
@@ -174,29 +181,75 @@ class RealLifeReplayController extends ChangeNotifier {
   Future<void> _extractAndSave() async {
     final transcript = _sourceTranscript!;
     _extraction = await _ai.extract(transcript);
-    _case = await _repository.saveCase(
-      clientId: _caseClientId,
-      sourceTranscript: transcript,
-      extraction: _extraction!,
-    );
     _setStatus(RealLifeReplayStatus.confirmExtraction);
   }
 
   Future<void> confirmAndReconstruct() async {
     final extraction = _extraction;
-    final caseRecord = _case;
-    if (extraction == null || caseRecord == null) return;
+    final sourceTranscript = _sourceTranscript;
+    if (extraction == null || sourceTranscript == null) return;
     _setStatus(RealLifeReplayStatus.reconstructing);
     try {
-      final result = await _ai.reconstruct(
-        caseId: caseRecord.id,
+      _reconstruction ??= await _ai.reconstruct(
+        caseId: _caseClientId,
         extraction: extraction,
       );
-      _scenario = result.scenario;
+      _case ??= await _repository.saveCaseWithReconstruction(
+        clientId: _caseClientId,
+        sourceTranscript: sourceTranscript,
+        extraction: extraction,
+        locale: languageCode,
+        reconstruction: _reconstruction!,
+      );
+      _scenario = _reconstruction!.scenario;
       _setStatus(RealLifeReplayStatus.readyToReplay);
     } catch (_) {
       _setError(_strings.realLifeReconstructError);
     }
+  }
+
+  Future<void> loadSavedCase(String caseId, {bool autoPlay = true}) async {
+    _loadedCaseId = caseId;
+    _setStatus(RealLifeReplayStatus.reconstructing);
+    try {
+      final saved = await _repository.fetchCase(
+        caseId: caseId,
+        locale: languageCode,
+      );
+      _case = saved.record;
+      _sourceTranscript = saved.sourceTranscript;
+      _extraction = saved.extraction;
+      _reconstruction = saved.reconstruction;
+      if (_reconstruction == null) {
+        _reconstruction = await _ai.reconstruct(
+          caseId: caseId,
+          extraction: saved.extraction,
+        );
+        await _repository.saveReconstruction(
+          caseId: caseId,
+          locale: languageCode,
+          reconstruction: _reconstruction!,
+        );
+      }
+      _scenario = _reconstruction!.scenario;
+      _setStatus(RealLifeReplayStatus.readyToReplay);
+      if (autoPlay) await playReplay();
+    } catch (_) {
+      _setError(_strings.realLifeReconstructError);
+    }
+  }
+
+  Future<void> retryAfterError() async {
+    if (canRetryReconstructionSave) {
+      await confirmAndReconstruct();
+      return;
+    }
+    final caseId = _loadedCaseId;
+    if (caseId != null) {
+      await loadSavedCase(caseId);
+      return;
+    }
+    reset();
   }
 
   Future<void> playReplay() async {
@@ -208,6 +261,7 @@ class RealLifeReplayController extends ChangeNotifier {
       await _repository.startSession(
         caseId: caseRecord.id,
         clientId: _sessionClientId,
+        locale: languageCode,
       );
       for (final line in scenario.speechLines) {
         await _playback.enqueue(await _speech.synthesize(line));
@@ -238,6 +292,7 @@ class RealLifeReplayController extends ChangeNotifier {
       final session = await _repository.startSession(
         caseId: caseRecord.id,
         clientId: _sessionClientId,
+        locale: languageCode,
       );
       final responseId = await _repository.saveResponse(
         sessionId: session.id,
@@ -328,11 +383,13 @@ class RealLifeReplayController extends ChangeNotifier {
     _responseClientId = _createId();
     _extraction = null;
     _case = null;
+    _reconstruction = null;
     _scenario = null;
     _sourceTranscript = null;
     _responseTranscript = null;
     _feedback = null;
     _followUpCount = 0;
+    _loadedCaseId = null;
     _setStatus(RealLifeReplayStatus.ready);
   }
 

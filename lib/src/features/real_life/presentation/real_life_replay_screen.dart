@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:konterreflex/src/core/audio/just_audio_playback_queue.dart';
@@ -17,7 +19,14 @@ import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 import 'package:konterreflex/src/shared/widgets/optional_transcript.dart';
 
 class RealLifeReplayScreen extends ConsumerStatefulWidget {
-  const RealLifeReplayScreen({super.key});
+  const RealLifeReplayScreen({
+    this.caseId,
+    this.autoStart = false,
+    super.key,
+  });
+
+  final String? caseId;
+  final bool autoStart;
 
   @override
   ConsumerState<RealLifeReplayScreen> createState() =>
@@ -41,7 +50,18 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
       repository: ref.read(realLifeRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
       strings: ref.read(appLocalizationsProvider),
+      languageCode: language.code,
     );
+    final caseId = widget.caseId;
+    if (caseId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(
+            _controller.loadSavedCase(caseId, autoPlay: widget.autoStart),
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -283,8 +303,12 @@ class _Actions extends StatelessWidget {
           ],
         ),
       RealLifeReplayStatus.error => OutlinedButton(
-          onPressed: controller.reset,
-          child: Text(context.l10n.startOver),
+          onPressed: controller.retryAfterError,
+          child: Text(
+            controller.canRetryReconstructionSave || controller.isSavedCase
+                ? context.l10n.retry
+                : context.l10n.startOver,
+          ),
         ),
       _ => const SizedBox.shrink(),
     };

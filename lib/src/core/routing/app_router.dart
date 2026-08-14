@@ -11,6 +11,7 @@ import 'package:konterreflex/src/features/history/presentation/history_screen.da
 import 'package:konterreflex/src/features/golden_book/presentation/golden_book_screen.dart';
 import 'package:konterreflex/src/features/onboarding/onboarding_screen.dart';
 import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
+import 'package:konterreflex/src/features/real_life/presentation/real_life_library_screen.dart';
 import 'package:konterreflex/src/features/settings/settings_screen.dart';
 import 'package:konterreflex/src/features/settings/privacy_settings_screen.dart';
 import 'package:konterreflex/src/features/subscription/subscription_screen.dart';
@@ -28,6 +29,8 @@ abstract final class AppRoute {
   static const training = 'training';
   static const trainingSession = 'training-session';
   static const realLife = 'real-life';
+  static const realLifeNew = 'real-life-new';
+  static const realLifeCase = 'real-life-case';
   static const speechChallenge = 'speech-challenge';
   static const goldenBook = 'golden-book';
   static const subscription = 'subscription';
@@ -159,7 +162,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/real-life',
         name: AppRoute.realLife,
-        builder: (context, state) => const RealLifeReplayScreen(),
+        builder: (context, state) => const RealLifeLibraryScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: AppRoute.realLifeNew,
+            builder: (context, state) => const RealLifeReplayScreen(),
+          ),
+          GoRoute(
+            path: 'case/:caseId',
+            name: AppRoute.realLifeCase,
+            builder: (context, state) => RealLifeReplayScreen(
+              caseId: state.pathParameters['caseId']!,
+              autoStart: true,
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: '/speech-challenge',

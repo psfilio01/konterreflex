@@ -93,14 +93,54 @@ class RealLifeCaseRecord {
   final String clientId;
 }
 
+class RealLifeCaseSummary {
+  const RealLifeCaseSummary({
+    required this.id,
+    required this.title,
+    required this.setting,
+    required this.relationships,
+    required this.createdAt,
+    required this.hasCurrentLanguage,
+  });
+
+  final String id;
+  final String title;
+  final String setting;
+  final List<String> relationships;
+  final DateTime createdAt;
+  final bool hasCurrentLanguage;
+}
+
+class SavedRealLifeCase {
+  const SavedRealLifeCase({
+    required this.record,
+    required this.sourceTranscript,
+    required this.extraction,
+    required this.reconstruction,
+  });
+
+  final RealLifeCaseRecord record;
+  final String sourceTranscript;
+  final RealLifeExtraction extraction;
+  final RealLifeReconstruction? reconstruction;
+}
+
 class RealLifeReconstruction {
-  const RealLifeReconstruction({required this.scenario});
+  const RealLifeReconstruction({
+    required this.scenario,
+    this.provider = 'stored',
+    this.model = 'stored',
+    this.promptVersion = 'stored',
+  });
 
   factory RealLifeReconstruction.fromJson(
     Map<String, dynamic> json, {
     required String id,
     String title = 'Deine echte Situation',
     String category = 'Echte Situation',
+    String provider = 'stored',
+    String model = 'stored',
+    String promptVersion = 'stored',
   }) {
     final rawCharacters = json['characters'];
     final rawTurns = json['turns'];
@@ -142,16 +182,56 @@ class RealLifeReconstruction {
     return RealLifeReconstruction(
       scenario: TrainingScenario(
         id: id,
-        title: title,
+        title: json['title'] is String &&
+                (json['title'] as String).trim().isNotEmpty
+            ? (json['title'] as String).trim()
+            : title,
         category: category,
         moderatorIntro: _text(json, 'moderator_intro'),
         characters: characters,
         turns: turns,
       ),
+      provider: provider,
+      model: model,
+      promptVersion: promptVersion,
     );
   }
 
   final TrainingScenario scenario;
+  final String provider;
+  final String model;
+  final String promptVersion;
+
+  Map<String, dynamic> toJson() {
+    final characterById = {
+      for (final character in scenario.characters) character.id: character,
+    };
+    return {
+      'title': scenario.title,
+      'moderator_intro': scenario.moderatorIntro,
+      'characters': [
+        for (final character in scenario.characters)
+          {
+            'name': character.name,
+            'description': character.description ?? '',
+          },
+      ],
+      'turns': [
+        for (final turn in scenario.turns)
+          {
+            'character_name': characterById[turn.characterId]?.name ?? '',
+            'body': turn.body,
+            'stage_direction': turn.stageDirection ?? '',
+          },
+      ],
+    };
+  }
+
+  Map<String, dynamic> get modelMeta => {
+        'provider': provider,
+        'model': model,
+        'prompt_version': promptVersion,
+      };
 }
 
 String _text(Map<String, dynamic> json, String key) {

@@ -89,6 +89,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get realLifeTitle => 'Real-life situation';
 
   @override
+  String get savedRealLifeSituation => 'Saved situation';
+
+  @override
+  String get savedRealLifeSituationsTitle => 'Your situations';
+
+  @override
+  String get realLifeLibraryIntro =>
+      'Choose a situation or let Konterreflex decide based on your previous practice.';
+
+  @override
+  String get randomPractice => 'Practise randomly';
+
+  @override
+  String get tellNewSituation => 'Tell a new situation';
+
+  @override
+  String get realLifeRandomPreparing => 'Choosing a situation …';
+
+  @override
+  String get realLifeLibraryLoadError =>
+      'Your situations could not be loaded right now.';
+
+  @override
   String get homeRealLifeDescription =>
       'Reconstruct an experience and respond again';
 

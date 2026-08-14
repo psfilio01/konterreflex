@@ -248,6 +248,48 @@ abstract class AppLocalizations {
   /// **'Echte Situation'**
   String get realLifeTitle;
 
+  /// No description provided for @savedRealLifeSituation.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeicherte Situation'**
+  String get savedRealLifeSituation;
+
+  /// No description provided for @savedRealLifeSituationsTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Situationen'**
+  String get savedRealLifeSituationsTitle;
+
+  /// No description provided for @realLifeLibraryIntro.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle eine Situation oder lass Konterreflex passend zu deinem bisherigen Training entscheiden.'**
+  String get realLifeLibraryIntro;
+
+  /// No description provided for @randomPractice.
+  ///
+  /// In de, this message translates to:
+  /// **'Zufällig üben'**
+  String get randomPractice;
+
+  /// No description provided for @tellNewSituation.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Situation erzählen'**
+  String get tellNewSituation;
+
+  /// No description provided for @realLifeRandomPreparing.
+  ///
+  /// In de, this message translates to:
+  /// **'Situation wird gewählt …'**
+  String get realLifeRandomPreparing;
+
+  /// No description provided for @realLifeLibraryLoadError.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Situationen konnten gerade nicht geladen werden.'**
+  String get realLifeLibraryLoadError;
+
   /// No description provided for @homeRealLifeDescription.
   ///
   /// In de, this message translates to:

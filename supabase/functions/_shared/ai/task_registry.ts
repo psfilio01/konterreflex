@@ -4,7 +4,7 @@ import {
   conversationReplyV1,
   goldenBookExtractV1,
   realLifeExtractV1,
-  realLifeReconstructV1,
+  realLifeReconstructV2,
   responseChallengeSessionV1,
   responseEvaluateV2,
   responseEvaluateV3,
@@ -64,6 +64,7 @@ const scenarioSchema = strictObject({
 });
 
 const reconstructionSchema = strictObject({
+  title: text(1),
   moderator_intro: text(1),
   characters: {
     type: "array",
@@ -199,8 +200,8 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   },
   "real_life.reconstruct": {
     task: "real_life.reconstruct",
-    prompt: realLifeReconstructV1,
-    promptVersion: "real_life_reconstruct_v1",
+    prompt: realLifeReconstructV2,
+    promptVersion: "real_life_reconstruct_v2",
     outputSchema: reconstructionSchema,
   },
   "conversation.reply": {
