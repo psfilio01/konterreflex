@@ -38,6 +38,13 @@ void main() {
       ),
       createId: () => ids.removeAt(0),
       random: Random(1),
+      processingCompletionDuration: Duration.zero,
+    );
+    final visualStates = <String>[];
+    controller.addListener(
+      () => visualStates.add(
+        '${controller.status.name}:${controller.evaluationVisualComplete}',
+      ),
     );
 
     await controller.startHandsFree(promptCount: 3);
@@ -58,6 +65,14 @@ void main() {
       reason: 'No feedback is spoken between prompts.',
     );
     expect(speech.synthesizedTexts.last, contains(feedback.headline));
+    expect(
+      visualStates,
+      containsAllInOrder([
+        'evaluating:false',
+        'evaluating:true',
+        'complete:true',
+      ]),
+    );
   });
 
   test('failed final evaluation retries without recording answers again',
@@ -79,6 +94,7 @@ void main() {
       ),
       createId: () => ids.removeAt(0),
       random: Random(2),
+      processingCompletionDuration: Duration.zero,
     );
 
     await controller.startHandsFree(promptCount: 2);
@@ -106,6 +122,7 @@ void main() {
         playback: _Playback(),
         speech: _Speech(),
       ),
+      processingCompletionDuration: Duration.zero,
     );
 
     expect(

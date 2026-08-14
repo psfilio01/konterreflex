@@ -160,6 +160,7 @@ class ScenarioSessionController extends ChangeNotifier {
             AnalyticsOutcome.completed);
       }
       if (_voice.snapshot.state == VoiceTurnState.processing) {
+        await _voice.completeProcessingVisualization();
         await _voice.presentFeedback(_feedback!.spokenSummaryFor(_strings));
       }
       _setStatus(ScenarioSessionStatus.feedbackReady);
@@ -202,6 +203,7 @@ class ScenarioSessionController extends ChangeNotifier {
         question: question.transcript,
       );
       _followUpAnswer = answer;
+      await _voice.completeProcessingVisualization();
       await _voice.presentFeedback(answer);
       _setStatus(ScenarioSessionStatus.feedbackReady);
     } catch (_) {
@@ -248,6 +250,7 @@ class ScenarioSessionController extends ChangeNotifier {
           ? _strings.savedSpoken(result.entry!.phrase)
           : result.clarificationQuestion!;
       if (result.saved) _savedPhrase = result.entry!.phrase;
+      await _voice.completeProcessingVisualization();
       await _voice.presentFeedback(spoken);
       _setStatus(ScenarioSessionStatus.feedbackReady);
     } catch (_) {

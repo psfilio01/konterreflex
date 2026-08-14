@@ -214,6 +214,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get orbThinking => 'Konterreflex denkt nach';
 
   @override
+  String get orbProcessingSpeech => 'Antwort wird verarbeitet';
+
+  @override
+  String get orbProcessingSpeechComplete => 'Antwort ist verarbeitet';
+
+  @override
   String get orbComplete => 'Abgeschlossen';
 
   @override
@@ -792,6 +798,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get realLifeReflectingTitle => 'Antwort wird reflektiert …';
+
+  @override
+  String get realLifePresentingFeedbackTitle => 'Konterreflex antwortet';
 
   @override
   String get realLifeFeedbackTitle => 'Dein Feedback';

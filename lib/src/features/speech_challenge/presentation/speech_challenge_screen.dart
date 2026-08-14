@@ -18,6 +18,18 @@ import 'package:konterreflex/src/features/speech_challenge/domain/speech_challen
 import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_card.dart';
 import 'package:konterreflex/src/features/training/presentation/qualitative_feedback_summary.dart';
 import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
+import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
+
+@visibleForTesting
+IntelligenceOrbState? speechChallengeEvaluationOrbState(
+  SpeechChallengeStatus status, {
+  required bool complete,
+}) {
+  if (status != SpeechChallengeStatus.evaluating) return null;
+  return complete
+      ? IntelligenceOrbState.processingSpeechComplete
+      : IntelligenceOrbState.processingSpeech;
+}
 
 class SpeechChallengeScreen extends ConsumerWidget {
   const SpeechChallengeScreen({super.key});
@@ -250,12 +262,23 @@ class _ChallengeSessionScreenState
   Widget _activeSession() {
     final status = _controller.status;
     final showProgress = _controller.targetCount > 0;
+    final evaluationOrbState = speechChallengeEvaluationOrbState(
+      status,
+      complete: _controller.evaluationVisualComplete,
+    );
     return Column(
       children: [
-        VoiceTurnOrb(
-          size: 156,
-          controller: _controller.voiceController,
-        ),
+        if (evaluationOrbState != null)
+          IntelligenceOrb(
+            size: 156,
+            state: evaluationOrbState,
+          )
+        else
+          VoiceTurnOrb(
+            size: 156,
+            controller: _controller.voiceController,
+            showProcessingSpiral: false,
+          ),
         if (showProgress) ...[
           const SizedBox(height: AppSpacing.lg),
           Text(

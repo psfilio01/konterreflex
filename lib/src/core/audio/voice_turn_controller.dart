@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
+import 'package:konterreflex/src/core/accessibility/motion_preferences.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
@@ -14,6 +15,7 @@ class VoiceTurnSnapshot {
     this.feedback,
     this.message,
     this.permissionStatus,
+    this.processingComplete = false,
   });
 
   final VoiceTurnState state;
@@ -21,6 +23,7 @@ class VoiceTurnSnapshot {
   final String? feedback;
   final String? message;
   final MicrophonePermissionStatus? permissionStatus;
+  final bool processingComplete;
 }
 
 class VoiceTurnController extends ChangeNotifier {
@@ -30,10 +33,13 @@ class VoiceTurnController extends ChangeNotifier {
     required AudioPlaybackQueue playback,
     required SpeechGateway speech,
     AppLocalizations? strings,
+    this.processingCompletionDuration = speechProcessingCompletionDuration,
+    ReducedMotionReader reducedMotion = platformAnimationsDisabled,
   })  : _permission = permission,
         _recorder = recorder,
         _playback = playback,
         _speech = speech,
+        _reducedMotion = reducedMotion,
         _strings = strings ?? lookupAppLocalizations(const Locale('de')) {
     if (recorder case final VoiceActivitySource source) {
       _recorderActivitySubscription = source.voiceActivity.listen(
@@ -52,6 +58,8 @@ class VoiceTurnController extends ChangeNotifier {
   final AudioPlaybackQueue _playback;
   final SpeechGateway _speech;
   final AppLocalizations _strings;
+  final Duration processingCompletionDuration;
+  final ReducedMotionReader _reducedMotion;
   final VoiceStateMachine _machine = VoiceStateMachine();
   final ValueNotifier<double> _voiceActivity = ValueNotifier(0);
   StreamSubscription<double>? _recorderActivitySubscription;
@@ -149,6 +157,7 @@ class VoiceTurnController extends ChangeNotifier {
     if (transcription == null) return;
     try {
       final feedback = await buildFeedback(transcription.transcript);
+      await completeProcessingVisualization();
       await presentFeedback(feedback);
     } catch (_) {
       if (_machine.state == VoiceTurnState.processing) {
@@ -245,6 +254,17 @@ class VoiceTurnController extends ChangeNotifier {
     }
   }
 
+  Future<void> completeProcessingVisualization() async {
+    if (_machine.state != VoiceTurnState.processing) {
+      throw StateError('No processed response can be completed visually.');
+    }
+    _publish(processingComplete: true);
+    await waitForProcessingCompletion(
+      duration: processingCompletionDuration,
+      reducedMotion: _reducedMotion,
+    );
+  }
+
   void finishWithoutFeedback() {
     if (_machine.state != VoiceTurnState.processing) {
       throw StateError('No processed response can be completed.');
@@ -315,6 +335,7 @@ class VoiceTurnController extends ChangeNotifier {
     String? feedback,
     String? message,
     MicrophonePermissionStatus? permissionStatus,
+    bool processingComplete = false,
   }) {
     _snapshot = VoiceTurnSnapshot(
       state: _machine.state,
@@ -322,6 +343,7 @@ class VoiceTurnController extends ChangeNotifier {
       feedback: feedback ?? _snapshot.feedback,
       message: message,
       permissionStatus: permissionStatus,
+      processingComplete: processingComplete,
     );
     notifyListeners();
   }

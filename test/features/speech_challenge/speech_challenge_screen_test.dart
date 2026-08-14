@@ -6,15 +6,41 @@ import 'package:konterreflex/src/core/localization/localization_providers.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/speech_challenge/application/speech_challenge_providers.dart';
+import 'package:konterreflex/src/features/speech_challenge/application/speech_challenge_controller.dart';
 import 'package:konterreflex/src/features/speech_challenge/data/speech_challenge_evaluation_repository.dart';
 import 'package:konterreflex/src/features/speech_challenge/data/speech_challenge_repository.dart';
 import 'package:konterreflex/src/features/speech_challenge/domain/speech_challenge.dart';
 import 'package:konterreflex/src/features/speech_challenge/presentation/speech_challenge_screen.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
+import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  test('spiral is reserved for the consolidated challenge evaluation', () {
+    expect(
+      speechChallengeEvaluationOrbState(
+        SpeechChallengeStatus.transitioning,
+        complete: false,
+      ),
+      isNull,
+    );
+    expect(
+      speechChallengeEvaluationOrbState(
+        SpeechChallengeStatus.evaluating,
+        complete: false,
+      ),
+      IntelligenceOrbState.processingSpeech,
+    );
+    expect(
+      speechChallengeEvaluationOrbState(
+        SpeechChallengeStatus.evaluating,
+        complete: true,
+      ),
+      IntelligenceOrbState.processingSpeechComplete,
+    );
+  });
+
   testWidgets('challenge cards use the same spacing as training cards', (
     tester,
   ) async {

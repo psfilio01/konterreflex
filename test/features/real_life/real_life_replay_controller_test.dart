@@ -10,6 +10,7 @@ import 'package:konterreflex/src/features/real_life/domain/real_life_case.dart';
 import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
+import 'package:konterreflex/src/shared/widgets/intelligence_orb.dart';
 
 void main() {
   test('private replay scenes never opt into the shared audio cache', () {
@@ -34,7 +35,10 @@ void main() {
       repository: repository,
       feedbackRepository: _Feedback(),
       createId: () => ids.removeAt(0),
+      processingCompletionDuration: Duration.zero,
     );
+    final orbStates = <IntelligenceOrbState>[];
+    controller.addListener(() => orbStates.add(controller.orbState));
 
     await controller.startDescription();
     await controller.finishDescription();
@@ -42,6 +46,13 @@ void main() {
     expect(
         controller.extraction?.emotionalSocialTension, 'Druck vor der Gruppe');
     expect(repository.savedCaseCount, 0);
+    expect(
+      orbStates,
+      containsAllInOrder([
+        IntelligenceOrbState.processingSpeech,
+        IntelligenceOrbState.processingSpeechComplete,
+      ]),
+    );
 
     await controller.confirmAndReconstruct();
     expect(repository.savedCaseCount, 1);
@@ -53,6 +64,12 @@ void main() {
     expect(controller.status, RealLifeReplayStatus.feedbackReady);
     expect(controller.responseTranscript, 'Meine neue Antwort.');
     expect(controller.feedback?.headline, 'Klarer zweiter Versuch');
+    expect(
+      orbStates.where(
+        (state) => state == IntelligenceOrbState.processingSpeechComplete,
+      ),
+      hasLength(2),
+    );
 
     await controller.createSimilarVariation();
     expect(controller.status, RealLifeReplayStatus.readyToReplay);
@@ -75,6 +92,7 @@ void main() {
       ai: ai,
       repository: repository,
       feedbackRepository: _Feedback(),
+      processingCompletionDuration: Duration.zero,
     );
 
     await controller.loadSavedCase('case-1', autoPlay: false);
@@ -102,6 +120,7 @@ void main() {
       repository: repository,
       feedbackRepository: _Feedback(),
       languageCode: 'en',
+      processingCompletionDuration: Duration.zero,
     );
 
     await controller.loadSavedCase('case-1');
@@ -129,6 +148,7 @@ void main() {
       repository: repository,
       feedbackRepository: _Feedback(),
       languageCode: 'en',
+      processingCompletionDuration: Duration.zero,
     );
 
     await controller.loadSavedCase('case-1', autoPlay: false);
@@ -143,6 +163,31 @@ void main() {
     final json = extraction.toJson()
       ..['diagnosed_motive'] = 'Kontrollbedürfnis';
     expect(() => RealLifeExtraction.fromJson(json), throwsFormatException);
+  });
+
+  test('failed situation understanding never completes the spiral', () async {
+    final controller = RealLifeReplayController(
+      permission: _Permission(),
+      recorder: _Recorder(),
+      playback: _Playback(),
+      speech: _Speech(['Private Situation']),
+      ai: _FailingAi(),
+      repository: _Repository(),
+      feedbackRepository: _Feedback(),
+      processingCompletionDuration: Duration.zero,
+    );
+    final orbStates = <IntelligenceOrbState>[];
+    controller.addListener(() => orbStates.add(controller.orbState));
+
+    await controller.startDescription();
+    await controller.finishDescription();
+
+    expect(controller.status, RealLifeReplayStatus.error);
+    expect(orbStates, contains(IntelligenceOrbState.processingSpeech));
+    expect(
+      orbStates,
+      isNot(contains(IntelligenceOrbState.processingSpeechComplete)),
+    );
   });
 }
 
@@ -275,6 +320,20 @@ class _Ai implements RealLifeAiService {
     reconstructionCalls += 1;
     return const RealLifeReconstruction(scenario: scenario);
   }
+}
+
+class _FailingAi implements RealLifeAiService {
+  @override
+  Future<RealLifeExtraction> extract(String transcript) =>
+      Future<RealLifeExtraction>.error(StateError('unavailable'));
+
+  @override
+  Future<RealLifeReconstruction> reconstruct({
+    required String caseId,
+    required RealLifeExtraction extraction,
+    bool similarVariation = false,
+  }) =>
+      Future<RealLifeReconstruction>.error(StateError('unavailable'));
 }
 
 class _Repository implements RealLifeRepository {
