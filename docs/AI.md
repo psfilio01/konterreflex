@@ -34,6 +34,15 @@ task. It returns one contextual overall result and one ordered qualitative
 detail per response. The overall signal must not be derived by averaging or
 counting detail signals.
 
+Real Life Replay reconstruction returns a short, non-sensitive title alongside
+the moderator and actor turns. The validated result is persisted once per case
+and app language. Replaying a saved case does not call the model again for an
+already available language snapshot.
+
+Adaptive practice consumes only the persisted `overall_signal` after feedback
+has been stored. It does not call the model, average dimension signals or create
+a numerical score.
+
 ## Knowledge foundation
 Communication science references must be curated in a separate, reviewable knowledge layer. Do not claim scientific authority from a name alone. Store source, concept, intended use, evidence status and limitations.
 
