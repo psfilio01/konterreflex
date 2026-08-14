@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:konterreflex/src/core/audio/just_audio_playback_queue.dart';
 import 'package:konterreflex/src/core/audio/permission_handler_microphone.dart';
 import 'package:konterreflex/src/core/audio/record_voice_recorder.dart';
@@ -9,6 +12,7 @@ import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
 import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/core/localization/localization_providers.dart';
+import 'package:konterreflex/src/core/routing/app_router.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_providers.dart';
 import 'package:konterreflex/src/features/training/application/scenario_session_controller.dart';
@@ -20,9 +24,18 @@ import 'package:konterreflex/src/shared/widgets/optional_transcript.dart';
 import 'package:konterreflex/src/shared/widgets/voice_turn_orb.dart';
 
 class ScenarioSessionScreen extends ConsumerStatefulWidget {
-  const ScenarioSessionScreen({required this.scenario, super.key});
+  const ScenarioSessionScreen({
+    required this.scenario,
+    this.autoStart = false,
+    this.testController,
+    super.key,
+  });
 
   final TrainingScenario scenario;
+  final bool autoStart;
+
+  @visibleForTesting
+  final ScenarioSessionController? testController;
 
   @override
   ConsumerState<ScenarioSessionScreen> createState() =>
@@ -35,10 +48,21 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
   @override
   void initState() {
     super.initState();
+    _controller = widget.testController ?? _createController();
+    if (widget.autoStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _controller.status == ScenarioSessionStatus.ready) {
+          unawaited(_controller.start());
+        }
+      });
+    }
+  }
+
+  ScenarioSessionController _createController() {
     final client = ref.read(supabaseClientProvider);
     final strings = ref.read(appLocalizationsProvider);
     final language = ref.read(appLanguageProvider);
-    _controller = ScenarioSessionController(
+    return ScenarioSessionController(
       scenario: widget.scenario,
       repository: ref.read(scenarioRepositoryProvider),
       feedbackRepository: ref.read(feedbackRepositoryProvider),
@@ -111,7 +135,11 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
                         const SizedBox(height: AppSpacing.lg),
                       ] else
                         const SizedBox(height: AppSpacing.xl),
-                      _PrimaryAction(controller: _controller),
+                      _PrimaryAction(
+                        controller: _controller,
+                        onNextScenario: () =>
+                            context.replaceNamed(AppRoute.training),
+                      ),
                       if (permission ==
                           MicrophonePermissionStatus.permanentlyDenied)
                         TextButton(
@@ -182,9 +210,13 @@ class _ScenarioSessionScreenState extends ConsumerState<ScenarioSessionScreen> {
 }
 
 class _PrimaryAction extends StatelessWidget {
-  const _PrimaryAction({required this.controller});
+  const _PrimaryAction({
+    required this.controller,
+    required this.onNextScenario,
+  });
 
   final ScenarioSessionController controller;
+  final VoidCallback onNextScenario;
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +252,12 @@ class _PrimaryAction extends StatelessWidget {
           alignment: WrapAlignment.center,
           children: [
             FilledButton.icon(
+              key: const Key('next-adaptive-scenario'),
+              onPressed: onNextScenario,
+              icon: const Icon(Icons.arrow_forward_rounded),
+              label: Text(context.l10n.nextScenario),
+            ),
+            OutlinedButton.icon(
               onPressed: controller.startFollowUp,
               icon: const Icon(Icons.mic_none_rounded),
               label: Text(context.l10n.askFollowUp),

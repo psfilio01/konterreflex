@@ -4,17 +4,12 @@ import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/core/localization/localization_providers.dart';
 import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
 import 'package:konterreflex/src/features/training/data/scenario_repository.dart';
-import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
 
 final scenarioRepositoryProvider = Provider<ScenarioRepository>(
   (ref) => SupabaseScenarioRepository(
     ref.watch(supabaseClientProvider),
     languageCode: ref.watch(appLanguageProvider).code,
   ),
-);
-
-final approvedScenariosProvider = FutureProvider<List<TrainingScenario>>(
-  (ref) => ref.watch(scenarioRepositoryProvider).fetchApprovedScenarios(),
 );
 
 final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {

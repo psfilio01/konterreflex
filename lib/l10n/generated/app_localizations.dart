@@ -800,6 +800,24 @@ abstract class AppLocalizations {
   /// **'Training'**
   String get trainingTitle;
 
+  /// No description provided for @trainingSelectingTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Passende Situation wird gewählt'**
+  String get trainingSelectingTitle;
+
+  /// No description provided for @trainingSelectingBody.
+  ///
+  /// In de, this message translates to:
+  /// **'Konterreflex berücksichtigt, was du zuletzt geübt hast.'**
+  String get trainingSelectingBody;
+
+  /// No description provided for @nextScenario.
+  ///
+  /// In de, this message translates to:
+  /// **'Nächste Situation'**
+  String get nextScenario;
+
   /// No description provided for @scenariosLoadError.
   ///
   /// In de, this message translates to:
