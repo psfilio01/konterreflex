@@ -91,6 +91,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get realLifeTitle => 'Echte Situation';
 
   @override
+  String get savedRealLifeSituation => 'Gespeicherte Situation';
+
+  @override
+  String get savedRealLifeSituationsTitle => 'Deine Situationen';
+
+  @override
+  String get realLifeLibraryIntro =>
+      'Wähle eine Situation oder lass Konterreflex passend zu deinem bisherigen Training entscheiden.';
+
+  @override
+  String get randomPractice => 'Zufällig üben';
+
+  @override
+  String get tellNewSituation => 'Neue Situation erzählen';
+
+  @override
+  String get realLifeRandomPreparing => 'Situation wird gewählt …';
+
+  @override
+  String get realLifeLibraryLoadError =>
+      'Deine Situationen konnten gerade nicht geladen werden.';
+
+  @override
   String get homeRealLifeDescription =>
       'Erlebtes rekonstruieren und neu beantworten';
 

@@ -11,8 +11,7 @@ Current tasks:
 - `response.evaluate_visual` -> `response_evaluate_v3.md`
 - `response.evaluate_challenge_session` -> `response_challenge_session_v1.md`
 - `real_life.extract` -> `real_life_extract_v1.md`
-- `real_life.reconstruct` -> `real_life_reconstruct_v1.md` (v2 planned by
-  `prompts/17_REAL_LIFE_LIBRARY.md`)
+- `real_life.reconstruct` -> `real_life_reconstruct_v2.md`
 - `conversation.reply` -> `conversation_reply_v1.md`
 - `golden_book.extract` -> `golden_book_extract_v1.md`
 

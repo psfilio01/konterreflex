@@ -24,13 +24,14 @@ void main() {
       8,
       (index) => '00000000-0000-4000-8000-${index.toString().padLeft(12, '0')}',
     );
+    final repository = _Repository();
     final controller = RealLifeReplayController(
       permission: _Permission(),
       recorder: _Recorder(),
       playback: _Playback(),
       speech: _Speech(['Die ursprüngliche Situation.', 'Meine neue Antwort.']),
       ai: _Ai(),
-      repository: _Repository(),
+      repository: repository,
       feedbackRepository: _Feedback(),
       createId: () => ids.removeAt(0),
     );
@@ -40,8 +41,10 @@ void main() {
     expect(controller.status, RealLifeReplayStatus.confirmExtraction);
     expect(
         controller.extraction?.emotionalSocialTension, 'Druck vor der Gruppe');
+    expect(repository.savedCaseCount, 0);
 
     await controller.confirmAndReconstruct();
+    expect(repository.savedCaseCount, 1);
     await controller.playReplay();
     expect(controller.status, RealLifeReplayStatus.awaitingResponse);
 
@@ -53,6 +56,87 @@ void main() {
 
     await controller.createSimilarVariation();
     expect(controller.status, RealLifeReplayStatus.readyToReplay);
+  });
+
+  test('saved localization is reused without another AI call', () async {
+    final repository = _Repository()
+      ..savedCase = const SavedRealLifeCase(
+        record: RealLifeCaseRecord(id: 'case-1', clientId: 'client-1'),
+        sourceTranscript: 'Private Situation',
+        extraction: extraction,
+        reconstruction: RealLifeReconstruction(scenario: scenario),
+      );
+    final ai = _Ai();
+    final controller = RealLifeReplayController(
+      permission: _Permission(),
+      recorder: _Recorder(),
+      playback: _Playback(),
+      speech: _Speech([]),
+      ai: ai,
+      repository: repository,
+      feedbackRepository: _Feedback(),
+    );
+
+    await controller.loadSavedCase('case-1', autoPlay: false);
+
+    expect(controller.status, RealLifeReplayStatus.readyToReplay);
+    expect(controller.scenario?.title, scenario.title);
+    expect(ai.reconstructionCalls, 0);
+    expect(repository.savedReconstructionCount, 0);
+  });
+
+  test('saved case autoplay starts exactly one localized session', () async {
+    final repository = _Repository()
+      ..savedCase = const SavedRealLifeCase(
+        record: RealLifeCaseRecord(id: 'case-1', clientId: 'client-1'),
+        sourceTranscript: 'Private Situation',
+        extraction: extraction,
+        reconstruction: RealLifeReconstruction(scenario: scenario),
+      );
+    final controller = RealLifeReplayController(
+      permission: _Permission(),
+      recorder: _Recorder(),
+      playback: _Playback(),
+      speech: _Speech([]),
+      ai: _Ai(),
+      repository: repository,
+      feedbackRepository: _Feedback(),
+      languageCode: 'en',
+    );
+
+    await controller.loadSavedCase('case-1');
+
+    expect(controller.status, RealLifeReplayStatus.awaitingResponse);
+    expect(repository.startedSessionCount, 1);
+    expect(repository.startedLocale, 'en');
+  });
+
+  test('missing language snapshot is generated and persisted once', () async {
+    final repository = _Repository()
+      ..savedCase = const SavedRealLifeCase(
+        record: RealLifeCaseRecord(id: 'case-1', clientId: 'client-1'),
+        sourceTranscript: 'Private Situation',
+        extraction: extraction,
+        reconstruction: null,
+      );
+    final ai = _Ai();
+    final controller = RealLifeReplayController(
+      permission: _Permission(),
+      recorder: _Recorder(),
+      playback: _Playback(),
+      speech: _Speech([]),
+      ai: ai,
+      repository: repository,
+      feedbackRepository: _Feedback(),
+      languageCode: 'en',
+    );
+
+    await controller.loadSavedCase('case-1', autoPlay: false);
+    await controller.loadSavedCase('case-1', autoPlay: false);
+
+    expect(ai.reconstructionCalls, 1);
+    expect(repository.savedReconstructionCount, 1);
+    expect(repository.savedLocale, 'en');
   });
 
   test('extraction rejects unsupported inferred fields', () {
@@ -177,6 +261,8 @@ class _Speech implements SpeechGateway {
 }
 
 class _Ai implements RealLifeAiService {
+  int reconstructionCalls = 0;
+
   @override
   Future<RealLifeExtraction> extract(String transcript) async => extraction;
 
@@ -185,25 +271,82 @@ class _Ai implements RealLifeAiService {
     required String caseId,
     required RealLifeExtraction extraction,
     bool similarVariation = false,
-  }) async =>
-      const RealLifeReconstruction(scenario: scenario);
+  }) async {
+    reconstructionCalls += 1;
+    return const RealLifeReconstruction(scenario: scenario);
+  }
 }
 
 class _Repository implements RealLifeRepository {
+  int savedCaseCount = 0;
+  int savedReconstructionCount = 0;
+  int startedSessionCount = 0;
+  String? savedLocale;
+  String? startedLocale;
+  SavedRealLifeCase? savedCase;
+
   @override
-  Future<RealLifeCaseRecord> saveCase({
+  Future<List<RealLifeCaseSummary>> fetchCases(
+          {required String locale}) async =>
+      const [];
+
+  @override
+  Future<SavedRealLifeCase> fetchCase({
+    required String caseId,
+    required String locale,
+  }) async =>
+      savedCase!;
+
+  @override
+  Future<String?> selectNextCaseId({required String locale}) async =>
+      savedCase?.record.id;
+
+  @override
+  Future<RealLifeCaseRecord> saveCaseWithReconstruction({
     required String clientId,
     required String sourceTranscript,
     required RealLifeExtraction extraction,
-  }) async =>
-      RealLifeCaseRecord(id: 'case-1', clientId: clientId);
+    required String locale,
+    required RealLifeReconstruction reconstruction,
+  }) async {
+    savedCaseCount += 1;
+    final record = RealLifeCaseRecord(id: 'case-1', clientId: clientId);
+    savedCase = SavedRealLifeCase(
+      record: record,
+      sourceTranscript: sourceTranscript,
+      extraction: extraction,
+      reconstruction: reconstruction,
+    );
+    return record;
+  }
+
+  @override
+  Future<void> saveReconstruction({
+    required String caseId,
+    required String locale,
+    required RealLifeReconstruction reconstruction,
+  }) async {
+    savedReconstructionCount += 1;
+    savedLocale = locale;
+    final current = savedCase!;
+    savedCase = SavedRealLifeCase(
+      record: current.record,
+      sourceTranscript: current.sourceTranscript,
+      extraction: current.extraction,
+      reconstruction: reconstruction,
+    );
+  }
 
   @override
   Future<TrainingSessionRecord> startSession({
     required String caseId,
     required String clientId,
-  }) async =>
-      TrainingSessionRecord(id: 'session-1', clientId: clientId);
+    required String locale,
+  }) async {
+    startedSessionCount += 1;
+    startedLocale = locale;
+    return TrainingSessionRecord(id: 'session-1', clientId: clientId);
+  }
 
   @override
   Future<String> saveResponse({

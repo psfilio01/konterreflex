@@ -49,6 +49,9 @@ class GatewayRealLifeAiService implements RealLifeAiService {
       id: caseId,
       title: scenarioTitle,
       category: scenarioCategory,
+      provider: result.provider,
+      model: result.model,
+      promptVersion: result.promptVersion,
     );
   }
 }

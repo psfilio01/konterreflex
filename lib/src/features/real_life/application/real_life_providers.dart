@@ -18,5 +18,9 @@ final realLifeAiServiceProvider = Provider<RealLifeAiService>((ref) {
 });
 
 final realLifeRepositoryProvider = Provider<RealLifeRepository>(
-  (ref) => SupabaseRealLifeRepository(ref.watch(supabaseClientProvider)),
+  (ref) => SupabaseRealLifeRepository(
+    ref.watch(supabaseClientProvider),
+    fallbackTitle: ref.watch(appLocalizationsProvider).savedRealLifeSituation,
+    scenarioCategory: ref.watch(appLocalizationsProvider).realLifeTitle,
+  ),
 );
