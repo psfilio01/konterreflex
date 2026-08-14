@@ -156,6 +156,8 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
           context.l10n.realLifeRecordingTitle,
         RealLifeReplayStatus.processingResponse =>
           context.l10n.realLifeReflectingTitle,
+        RealLifeReplayStatus.presentingFeedback =>
+          context.l10n.realLifePresentingFeedbackTitle,
         RealLifeReplayStatus.feedbackReady =>
           context.l10n.realLifeFeedbackTitle,
         RealLifeReplayStatus.error => context.l10n.realLifeErrorTitle,

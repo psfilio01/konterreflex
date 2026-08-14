@@ -16,9 +16,14 @@ void main() {
       recorder: _MockRecorder(),
       playback: playback,
       speech: speech,
+      processingCompletionDuration: Duration.zero,
     );
     final states = <VoiceTurnState>[];
-    controller.addListener(() => states.add(controller.snapshot.state));
+    final completionSignals = <bool>[];
+    controller.addListener(() {
+      states.add(controller.snapshot.state);
+      completionSignals.add(controller.snapshot.processingComplete);
+    });
 
     await controller.playScene(const [
       SpeechLine(text: 'Eine kurze Situation.', role: VoiceRole.moderator),
@@ -43,6 +48,7 @@ void main() {
       VoiceRole.intelligence,
     ]);
     expect(playback.playCount, 2);
+    expect(completionSignals, contains(true));
     expect(
         states,
         containsAllInOrder([
@@ -188,6 +194,59 @@ void main() {
     await controller.startRecording();
     recorder.emit(0.86);
     expect(controller.voiceActivity.value, closeTo(0.86, 0.001));
+  });
+
+  test('reduced motion completes processing without an artificial wait',
+      () async {
+    final controller = VoiceTurnController(
+      permission: _MockPermission(MicrophonePermissionStatus.granted),
+      recorder: _MockRecorder(),
+      playback: _MockPlayback(),
+      speech: _MockSpeech(),
+      processingCompletionDuration: const Duration(days: 1),
+      reducedMotion: () => true,
+    );
+    final completionSignals = <bool>[];
+    controller.addListener(
+      () => completionSignals.add(controller.snapshot.processingComplete),
+    );
+    await controller.playScene(const [
+      SpeechLine(text: 'Eine kurze Situation.', role: VoiceRole.moderator),
+    ]);
+    await controller.startRecording();
+
+    await controller.stopAndProcess(
+      buildFeedback: (transcript) async => 'Verstanden.',
+    );
+
+    expect(completionSignals, contains(true));
+    expect(controller.snapshot.state, VoiceTurnState.followUp);
+  });
+
+  test('failed response processing never publishes a positive completion',
+      () async {
+    final controller = VoiceTurnController(
+      permission: _MockPermission(MicrophonePermissionStatus.granted),
+      recorder: _MockRecorder(),
+      playback: _MockPlayback(),
+      speech: _MockSpeech(),
+      processingCompletionDuration: Duration.zero,
+    );
+    final completionSignals = <bool>[];
+    controller.addListener(
+      () => completionSignals.add(controller.snapshot.processingComplete),
+    );
+    await controller.playScene(const [
+      SpeechLine(text: 'Eine kurze Situation.', role: VoiceRole.moderator),
+    ]);
+    await controller.startRecording();
+
+    await controller.stopAndProcess(
+      buildFeedback: (transcript) => Future<String>.error(StateError('fail')),
+    );
+
+    expect(completionSignals, isNot(contains(true)));
+    expect(controller.snapshot.state, VoiceTurnState.awaitingUser);
   });
 }
 

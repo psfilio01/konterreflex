@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/widgets.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
+import 'package:konterreflex/src/core/accessibility/motion_preferences.dart';
 import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_state_machine.dart';
 import 'package:konterreflex/src/core/audio/voice_turn_controller.dart';
@@ -30,11 +31,14 @@ class SpeechChallengeController extends ChangeNotifier {
     String Function()? createId,
     Random? random,
     AppLocalizations? strings,
+    this.processingCompletionDuration = speechProcessingCompletionDuration,
+    ReducedMotionReader reducedMotion = platformAnimationsDisabled,
   })  : _repository = repository,
         _evaluationRepository = evaluationRepository,
         _voice = voice,
         _createId = createId ?? createClientUuid,
         _random = random ?? Random(),
+        _reducedMotion = reducedMotion,
         _strings = strings ?? lookupAppLocalizations(const Locale('de')) {
     _voice.addListener(_relayVoice);
   }
@@ -46,6 +50,8 @@ class SpeechChallengeController extends ChangeNotifier {
   final String Function() _createId;
   final Random _random;
   final AppLocalizations _strings;
+  final Duration processingCompletionDuration;
+  final ReducedMotionReader _reducedMotion;
 
   SpeechChallengeStatus _status = SpeechChallengeStatus.ready;
   TrainingSessionRecord? _session;
@@ -57,6 +63,7 @@ class SpeechChallengeController extends ChangeNotifier {
   bool _sessionCompleted = false;
   ChallengeSessionResult? _result;
   String? _message;
+  bool _evaluationVisualComplete = false;
 
   SpeechChallengeStatus get status => _status;
   ChallengePrompt? get currentPrompt =>
@@ -80,6 +87,7 @@ class SpeechChallengeController extends ChangeNotifier {
       _sessionCompleted &&
       _answers.isNotEmpty &&
       _result == null;
+  bool get evaluationVisualComplete => _evaluationVisualComplete;
 
   Future<void> startHandsFree({required int promptCount}) async {
     if (_status != SpeechChallengeStatus.ready) return;
@@ -129,6 +137,7 @@ class SpeechChallengeController extends ChangeNotifier {
     _sessionCompleted = false;
     _result = null;
     _message = null;
+    _evaluationVisualComplete = false;
   }
 
   Future<bool> _runPrompt(ChallengePrompt prompt) async {
@@ -168,6 +177,7 @@ class SpeechChallengeController extends ChangeNotifier {
   }
 
   Future<void> _evaluateCompletedAnswers() async {
+    _evaluationVisualComplete = false;
     _setStatus(SpeechChallengeStatus.evaluating);
     try {
       final result = await _evaluationRepository.evaluate(
@@ -177,6 +187,12 @@ class SpeechChallengeController extends ChangeNotifier {
       await _repository.saveResult(
         sessionId: _session!.id,
         result: result,
+      );
+      _evaluationVisualComplete = true;
+      notifyListeners();
+      await waitForProcessingCompletion(
+        duration: processingCompletionDuration,
+        reducedMotion: _reducedMotion,
       );
       _result = result;
       _setStatus(SpeechChallengeStatus.complete);
@@ -224,6 +240,7 @@ class SpeechChallengeController extends ChangeNotifier {
     _session = null;
     _sessionCompleted = false;
     _result = null;
+    _evaluationVisualComplete = false;
     _setStatus(SpeechChallengeStatus.ready);
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:konterreflex/l10n/generated/app_localizations.dart';
+import 'package:konterreflex/src/core/accessibility/motion_preferences.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
 import 'package:konterreflex/src/features/real_life/data/real_life_ai_service.dart';
@@ -26,6 +27,7 @@ enum RealLifeReplayStatus {
   awaitingResponse,
   recordingResponse,
   processingResponse,
+  presentingFeedback,
   feedbackReady,
   error,
 }
@@ -40,6 +42,8 @@ class RealLifeReplayController extends ChangeNotifier {
     required RealLifeRepository repository,
     required FeedbackRepository feedbackRepository,
     this.languageCode = 'de',
+    this.processingCompletionDuration = speechProcessingCompletionDuration,
+    ReducedMotionReader reducedMotion = platformAnimationsDisabled,
     String Function()? createId,
     AppLocalizations? strings,
   })  : _permission = permission,
@@ -49,6 +53,7 @@ class RealLifeReplayController extends ChangeNotifier {
         _ai = ai,
         _repository = repository,
         _feedbackRepository = feedbackRepository,
+        _reducedMotion = reducedMotion,
         _createId = createId ?? createClientUuid,
         _caseClientId = (createId ?? createClientUuid)(),
         _sessionClientId = (createId ?? createClientUuid)(),
@@ -63,7 +68,8 @@ class RealLifeReplayController extends ChangeNotifier {
     }
     if (playback case final VoiceActivitySource source) {
       _playbackActivitySubscription = source.voiceActivity.listen((level) {
-        if (_status == RealLifeReplayStatus.playing) {
+        if (_status == RealLifeReplayStatus.playing ||
+            _status == RealLifeReplayStatus.presentingFeedback) {
           voiceActivity.value = level.clamp(0.0, 1.0).toDouble();
         }
       });
@@ -80,6 +86,8 @@ class RealLifeReplayController extends ChangeNotifier {
   final String Function() _createId;
   final AppLocalizations _strings;
   final String languageCode;
+  final Duration processingCompletionDuration;
+  final ReducedMotionReader _reducedMotion;
   String _caseClientId;
   String _sessionClientId;
   String _responseClientId;
@@ -95,6 +103,7 @@ class RealLifeReplayController extends ChangeNotifier {
   String? _message;
   int _followUpCount = 0;
   String? _loadedCaseId;
+  bool _speechProcessingComplete = false;
   final ValueNotifier<double> voiceActivity = ValueNotifier(0);
   StreamSubscription<double>? _recorderActivitySubscription;
   StreamSubscription<double>? _playbackActivitySubscription;
@@ -118,12 +127,16 @@ class RealLifeReplayController extends ChangeNotifier {
         RealLifeReplayStatus.recordingResponse =>
           IntelligenceOrbState.listening,
         RealLifeReplayStatus.extracting ||
-        RealLifeReplayStatus.reconstructing ||
         RealLifeReplayStatus.processingResponse =>
-          IntelligenceOrbState.thinking,
+          _speechProcessingComplete
+              ? IntelligenceOrbState.processingSpeechComplete
+              : IntelligenceOrbState.processingSpeech,
+        RealLifeReplayStatus.reconstructing => IntelligenceOrbState.thinking,
         RealLifeReplayStatus.preparingPlayback =>
           IntelligenceOrbState.preparing,
-        RealLifeReplayStatus.playing => IntelligenceOrbState.speaking,
+        RealLifeReplayStatus.playing ||
+        RealLifeReplayStatus.presentingFeedback =>
+          IntelligenceOrbState.speaking,
         RealLifeReplayStatus.feedbackReady => IntelligenceOrbState.success,
         _ => IntelligenceOrbState.idle,
       };
@@ -181,6 +194,7 @@ class RealLifeReplayController extends ChangeNotifier {
   Future<void> _extractAndSave() async {
     final transcript = _sourceTranscript!;
     _extraction = await _ai.extract(transcript);
+    await _completeSpeechProcessing();
     _setStatus(RealLifeReplayStatus.confirmExtraction);
   }
 
@@ -308,6 +322,8 @@ class RealLifeReplayController extends ChangeNotifier {
         feedback: _feedback!,
       );
       await _repository.completeSession(session.id);
+      await _completeSpeechProcessing();
+      _setStatus(RealLifeReplayStatus.presentingFeedback);
       await _playback.enqueue(
         await _speech.synthesize(
           SpeechLine(
@@ -390,13 +406,29 @@ class RealLifeReplayController extends ChangeNotifier {
     _feedback = null;
     _followUpCount = 0;
     _loadedCaseId = null;
+    _speechProcessingComplete = false;
     _setStatus(RealLifeReplayStatus.ready);
+  }
+
+  Future<void> _completeSpeechProcessing() async {
+    _speechProcessingComplete = true;
+    notifyListeners();
+    await waitForProcessingCompletion(
+      duration: processingCompletionDuration,
+      reducedMotion: _reducedMotion,
+    );
   }
 
   void _setStatus(RealLifeReplayStatus status) {
     _status = status;
     _message = null;
-    if (status != RealLifeReplayStatus.playing && !_isRecordingStatus(status)) {
+    if (status == RealLifeReplayStatus.extracting ||
+        status == RealLifeReplayStatus.processingResponse) {
+      _speechProcessingComplete = false;
+    }
+    if (status != RealLifeReplayStatus.playing &&
+        status != RealLifeReplayStatus.presentingFeedback &&
+        !_isRecordingStatus(status)) {
       voiceActivity.value = 0;
     }
     notifyListeners();

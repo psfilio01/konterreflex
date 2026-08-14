@@ -458,6 +458,18 @@ abstract class AppLocalizations {
   /// **'Konterreflex denkt nach'**
   String get orbThinking;
 
+  /// No description provided for @orbProcessingSpeech.
+  ///
+  /// In de, this message translates to:
+  /// **'Antwort wird verarbeitet'**
+  String get orbProcessingSpeech;
+
+  /// No description provided for @orbProcessingSpeechComplete.
+  ///
+  /// In de, this message translates to:
+  /// **'Antwort ist verarbeitet'**
+  String get orbProcessingSpeechComplete;
+
   /// No description provided for @orbComplete.
   ///
   /// In de, this message translates to:
@@ -1465,6 +1477,12 @@ abstract class AppLocalizations {
   /// In de, this message translates to:
   /// **'Antwort wird reflektiert …'**
   String get realLifeReflectingTitle;
+
+  /// No description provided for @realLifePresentingFeedbackTitle.
+  ///
+  /// In de, this message translates to:
+  /// **'Konterreflex antwortet'**
+  String get realLifePresentingFeedbackTitle;
 
   /// No description provided for @realLifeFeedbackTitle.
   ///

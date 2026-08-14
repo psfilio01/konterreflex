@@ -33,6 +33,7 @@ void main() {
         recorder: _Recorder(),
         playback: _Playback(),
         speech: _Speech(),
+        processingCompletionDuration: Duration.zero,
       ),
       createId: () => ids.removeAt(0),
     );
@@ -80,6 +81,7 @@ void main() {
         recorder: _Recorder(),
         playback: _Playback(),
         speech: _Speech(),
+        processingCompletionDuration: Duration.zero,
       ),
       createId: () => ids.removeAt(0),
     );
@@ -174,6 +176,7 @@ void main() {
         recorder: _Recorder(),
         playback: _Playback(),
         speech: _FailingSpeech(),
+        processingCompletionDuration: Duration.zero,
       ),
       createId: () => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     );
