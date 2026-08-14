@@ -151,6 +151,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 state.extra is TrainingScenario ? null : '/training',
             builder: (context, state) => ScenarioSessionScreen(
               scenario: state.extra! as TrainingScenario,
+              autoStart: state.uri.queryParameters['autoStart'] == 'true',
             ),
           ),
         ],

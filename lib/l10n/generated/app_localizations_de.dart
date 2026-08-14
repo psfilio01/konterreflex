@@ -420,6 +420,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trainingTitle => 'Training';
 
   @override
+  String get trainingSelectingTitle => 'Passende Situation wird gewählt';
+
+  @override
+  String get trainingSelectingBody =>
+      'Konterreflex berücksichtigt, was du zuletzt geübt hast.';
+
+  @override
+  String get nextScenario => 'Nächste Situation';
+
+  @override
   String get scenariosLoadError =>
       'Die Szenarien konnten nicht geladen werden.';
 

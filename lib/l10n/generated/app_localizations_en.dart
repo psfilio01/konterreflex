@@ -410,6 +410,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trainingTitle => 'Training';
 
   @override
+  String get trainingSelectingTitle => 'Choosing a suitable situation';
+
+  @override
+  String get trainingSelectingBody =>
+      'Konterreflex considers what you practised recently.';
+
+  @override
+  String get nextScenario => 'Next situation';
+
+  @override
   String get scenariosLoadError => 'The scenarios could not be loaded.';
 
   @override

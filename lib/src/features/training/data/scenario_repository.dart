@@ -2,7 +2,7 @@ import 'package:konterreflex/src/features/training/domain/training_scenario.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract interface class ScenarioRepository {
-  Future<List<TrainingScenario>> fetchApprovedScenarios();
+  Future<TrainingScenario?> fetchNextAdaptiveScenario();
 
   Future<TrainingSessionRecord> startSession({
     required String scenarioId,
@@ -40,14 +40,24 @@ class SupabaseScenarioRepository implements ScenarioRepository {
   }
 
   @override
-  Future<List<TrainingScenario>> fetchApprovedScenarios() async {
+  Future<TrainingScenario?> fetchNextAdaptiveScenario() async {
+    final selection = await _client.rpc(
+      'select_next_practice_item',
+      params: {'p_pool': 'training', 'p_locale': languageCode},
+    );
+    if (selection is! List || selection.isEmpty) return null;
+    final first = selection.first;
+    if (first is! Map || first['item_id'] is! String) {
+      throw const FormatException('Invalid adaptive scenario selection.');
+    }
     final data = await _client
         .from('scenarios')
         .select(_scenarioSelection)
+        .eq('id', first['item_id'] as String)
         .eq('status', 'active')
         .eq('locale', languageCode)
-        .order('title');
-    return data.map(TrainingScenario.fromJson).toList();
+        .maybeSingle();
+    return data == null ? null : TrainingScenario.fromJson(data);
   }
 
   @override

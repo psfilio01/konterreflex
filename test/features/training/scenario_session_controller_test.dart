@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
@@ -9,8 +11,58 @@ import 'package:konterreflex/src/features/training/data/feedback_repository.dart
 import 'package:konterreflex/src/features/training/data/scenario_repository.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
+import 'package:konterreflex/src/features/training/presentation/scenario_session_screen.dart';
 
 void main() {
+  testWidgets('adaptive session autoplays once and exposes the next scene', (
+    tester,
+  ) async {
+    final repository = _MemoryScenarioRepository();
+    final ids = [
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+      'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    ];
+    final controller = ScenarioSessionController(
+      scenario: testScenario,
+      repository: repository,
+      feedbackRepository: _FeedbackRepository(),
+      voice: VoiceTurnController(
+        permission: _Permission(),
+        recorder: _Recorder(),
+        playback: _Playback(),
+        speech: _Speech(),
+      ),
+      createId: () => ids.removeAt(0),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: ScenarioSessionScreen(
+            scenario: testScenario,
+            autoStart: true,
+            testController: controller,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.status, ScenarioSessionStatus.awaitingResponse);
+    expect(repository.sessions.length, 1);
+    await tester.pump();
+    expect(repository.sessions.length, 1);
+
+    await controller.startRecording();
+    await controller.submitResponse();
+    await tester.pumpAndSettle();
+
+    expect(controller.status, ScenarioSessionStatus.feedbackReady);
+    expect(find.byKey(const Key('next-adaptive-scenario')), findsOneWidget);
+  });
+
   test('complete mocked session persists once across a retry', () async {
     final repository = _MemoryScenarioRepository()..failCompletionOnce = true;
     final ids = [
@@ -157,8 +209,7 @@ class _MemoryScenarioRepository implements ScenarioRepository {
   bool failCompletionOnce = false;
 
   @override
-  Future<List<TrainingScenario>> fetchApprovedScenarios() async =>
-      [testScenario];
+  Future<TrainingScenario?> fetchNextAdaptiveScenario() async => testScenario;
 
   @override
   Future<TrainingSessionRecord> startSession({
