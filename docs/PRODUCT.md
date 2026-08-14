@@ -8,10 +8,19 @@ The user experiences realistic social situations, responds aloud, receives quali
 ## Main cases
 
 ### Real life replay
-The user tells Konterreflex what happened. The intelligence extracts context, people, intent and tension, reconstructs the situation with voices, lets the user answer again and then reflects on alternatives.
+The user tells Konterreflex what happened. The intelligence extracts context,
+people, intent and tension, reconstructs the situation with voices, lets the
+user answer again and then reflects on alternatives. Confirmed reconstructions
+become a private library. Users may choose a case directly or start an adaptive
+random replay. Reconstructions are generated once per selected app language and
+then reused.
 
 ### Training simulation
-Curated or approved scenarios cover one to one, group, work, family, friendship, dating and public situations. A neutral moderator voice introduces context, one or more actor voices perform the scene, then the user responds.
+Curated or approved scenarios cover one to one, group, work, family, friendship,
+dating and public situations. Opening Training selects an adaptive random scene
+without exposing the catalogue in the normal user flow. A neutral moderator
+voice introduces context, one or more actor voices perform the scene, then the
+user responds.
 
 ### Speech Challenge
 Short prompts without long scene introductions. The user chooses 1 to 15
@@ -29,6 +38,10 @@ Never reduce performance to a numerical score. Use concise qualitative language.
 Results may use the categorical visual signals `strong`, `developing` and
 `focus` for rapid orientation. They must stay contextual, non-numeric,
 accessible without color and accompanied by explanatory qualitative feedback.
+
+The overall signal may schedule a future repetition according to
+`docs/ADAPTIVE_PRACTICE.md`. This scheduling state is not a score. Dimension
+signals must not be counted or averaged for selection.
 
 The signed-in user chooses one app language in Settings. That one choice
 controls labels, curated training content, speech recognition, spoken voices
