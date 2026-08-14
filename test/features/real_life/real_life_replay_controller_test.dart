@@ -1,12 +1,19 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:konterreflex/src/core/ai/ai_gateway.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
+import 'package:konterreflex/src/features/golden_book/data/golden_book_capture_service.dart';
+import 'package:konterreflex/src/features/golden_book/data/golden_book_repository.dart';
+import 'package:konterreflex/src/features/golden_book/domain/golden_book_entry.dart';
 import 'package:konterreflex/src/features/real_life/application/real_life_replay_controller.dart';
 import 'package:konterreflex/src/features/real_life/data/real_life_ai_service.dart';
 import 'package:konterreflex/src/features/real_life/data/real_life_repository.dart';
 import 'package:konterreflex/src/features/real_life/domain/real_life_case.dart';
+import 'package:konterreflex/src/features/real_life/presentation/real_life_replay_screen.dart';
 import 'package:konterreflex/src/features/training/data/feedback_repository.dart';
 import 'package:konterreflex/src/features/training/domain/qualitative_feedback.dart';
 import 'package:konterreflex/src/features/training/domain/training_scenario.dart';
@@ -128,6 +135,95 @@ void main() {
     expect(controller.status, RealLifeReplayStatus.awaitingResponse);
     expect(repository.startedSessionCount, 1);
     expect(repository.startedLocale, 'en');
+  });
+
+  testWidgets('real-life feedback exposes voice and direct Golden Book capture',
+      (tester) async {
+    final ids = List.generate(
+      8,
+      (index) => '10000000-0000-4000-8000-${index.toString().padLeft(12, '0')}',
+    );
+    final goldenBookRepository = _GoldenBookRepository();
+    final goldenBookAi = _GoldenBookAi();
+    final controller = RealLifeReplayController(
+      permission: _Permission(),
+      recorder: _Recorder(),
+      playback: _Playback(),
+      speech: _Speech([
+        'Die ursprüngliche Situation.',
+        'Meine neue Antwort.',
+        'Speichere meine Antwort.',
+      ]),
+      ai: _Ai(),
+      repository: _Repository(),
+      feedbackRepository: _Feedback(),
+      goldenBookCapture: GoldenBookCaptureService(
+        ai: goldenBookAi,
+        repository: goldenBookRepository,
+      ),
+      createId: () => ids.removeAt(0),
+      processingCompletionDuration: Duration.zero,
+    );
+
+    await controller.startDescription();
+    await controller.finishDescription();
+    await controller.confirmAndReconstruct();
+    await controller.playReplay();
+    await controller.startResponse();
+    await controller.finishResponse();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: RealLifeReplayScreen(testController: controller),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final voiceButton = find.byKey(const Key('real-life-golden-book-voice'));
+    expect(voiceButton, findsOneWidget);
+    await tester.ensureVisible(voiceButton);
+    await tester.tap(voiceButton);
+    await tester.pump();
+    expect(controller.status, RealLifeReplayStatus.goldenBookRecording);
+
+    final sendButton = find.text('Sprachbefehl senden');
+    await tester.ensureVisible(sendButton);
+    await tester.tap(sendButton);
+    await tester.pumpAndSettle();
+
+    expect(controller.status, RealLifeReplayStatus.feedbackReady);
+    expect(controller.savedPhrase, 'Meine neue Antwort.');
+    expect(goldenBookRepository.sourceSessionId, 'session-1');
+    expect(goldenBookAi.conversationContext?['user_response'],
+        'Meine neue Antwort.');
+    expect(
+      find.text('Im Golden Book gespeichert: „Meine neue Antwort.“'),
+      findsOneWidget,
+    );
+
+    final alternatives = find.text('Natürliche Alternativen');
+    await tester.ensureVisible(alternatives);
+    await tester.tap(alternatives);
+    await tester.pumpAndSettle();
+    final directSave = find.byTooltip('Im Golden Book speichern');
+    expect(directSave, findsOneWidget);
+    await tester.ensureVisible(directSave);
+    await tester.tap(directSave);
+    await tester.pumpAndSettle();
+
+    expect(
+      goldenBookRepository.savedPhrases,
+      contains('Ich brauche noch einen Satz für meinen Punkt.'),
+    );
+    expect(
+      find.text(
+        'Im Golden Book gespeichert: '
+        '„Ich brauche noch einen Satz für meinen Punkt.“',
+      ),
+      findsOneWidget,
+    );
   });
 
   test('missing language snapshot is generated and persisted once', () async {
@@ -440,4 +536,60 @@ class _Feedback implements FeedbackRepository {
     required String question,
   }) async =>
       'Antwort';
+}
+
+class _GoldenBookAi implements AiGateway {
+  Map<String, dynamic>? conversationContext;
+
+  @override
+  Future<AiGatewayResult> invoke({
+    required String task,
+    required Map<String, dynamic> payload,
+  }) async {
+    conversationContext =
+        Map<String, dynamic>.from(payload['conversation_context'] as Map);
+    return const AiGatewayResult(
+      data: {
+        'status': 'extracted',
+        'phrase': 'Meine neue Antwort.',
+        'category': 'Persönlicher Favorit',
+        'source_reference': 'Eigene Antwort',
+        'clarification_question': '',
+      },
+      provider: 'mock',
+      model: 'mock',
+      promptVersion: 'golden_book_extract_v1',
+    );
+  }
+}
+
+class _GoldenBookRepository implements GoldenBookRepository {
+  final savedPhrases = <String>[];
+  String? sourceSessionId;
+
+  @override
+  Future<List<GoldenBookEntry>> fetchEntries() async => const [];
+
+  @override
+  Future<GoldenBookEntry> save({
+    required String phrase,
+    String? category,
+    String? note,
+    String? sourceSessionId,
+    Map<String, dynamic> modelMeta = const {},
+  }) async {
+    savedPhrases.add(phrase);
+    this.sourceSessionId = sourceSessionId;
+    return GoldenBookEntry(
+      id: 'entry-${savedPhrases.length}',
+      phrase: phrase,
+      category: category,
+      note: note,
+      sourceSessionId: sourceSessionId,
+      createdAt: DateTime(2026),
+    );
+  }
+
+  @override
+  Future<void> delete(String id) async {}
 }

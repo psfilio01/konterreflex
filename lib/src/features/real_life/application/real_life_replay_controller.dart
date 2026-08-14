@@ -5,6 +5,7 @@ import 'package:konterreflex/l10n/generated/app_localizations.dart';
 import 'package:konterreflex/src/core/accessibility/motion_preferences.dart';
 import 'package:konterreflex/src/core/audio/voice_models.dart';
 import 'package:konterreflex/src/core/audio/voice_services.dart';
+import 'package:konterreflex/src/features/golden_book/data/golden_book_capture_service.dart';
 import 'package:konterreflex/src/features/real_life/data/real_life_ai_service.dart';
 import 'package:konterreflex/src/features/real_life/data/real_life_repository.dart';
 import 'package:konterreflex/src/features/real_life/domain/real_life_case.dart';
@@ -29,6 +30,8 @@ enum RealLifeReplayStatus {
   processingResponse,
   presentingFeedback,
   feedbackReady,
+  goldenBookRecording,
+  goldenBookProcessing,
   error,
 }
 
@@ -41,6 +44,7 @@ class RealLifeReplayController extends ChangeNotifier {
     required RealLifeAiService ai,
     required RealLifeRepository repository,
     required FeedbackRepository feedbackRepository,
+    GoldenBookCaptureService? goldenBookCapture,
     this.languageCode = 'de',
     this.processingCompletionDuration = speechProcessingCompletionDuration,
     ReducedMotionReader reducedMotion = platformAnimationsDisabled,
@@ -53,6 +57,7 @@ class RealLifeReplayController extends ChangeNotifier {
         _ai = ai,
         _repository = repository,
         _feedbackRepository = feedbackRepository,
+        _goldenBookCapture = goldenBookCapture,
         _reducedMotion = reducedMotion,
         _createId = createId ?? createClientUuid,
         _caseClientId = (createId ?? createClientUuid)(),
@@ -83,6 +88,7 @@ class RealLifeReplayController extends ChangeNotifier {
   final RealLifeAiService _ai;
   final RealLifeRepository _repository;
   final FeedbackRepository _feedbackRepository;
+  final GoldenBookCaptureService? _goldenBookCapture;
   final String Function() _createId;
   final AppLocalizations _strings;
   final String languageCode;
@@ -100,7 +106,9 @@ class RealLifeReplayController extends ChangeNotifier {
   String? _sourceTranscript;
   String? _responseTranscript;
   QualitativeFeedback? _feedback;
+  TrainingSessionRecord? _session;
   String? _message;
+  String? _savedPhrase;
   int _followUpCount = 0;
   String? _loadedCaseId;
   bool _speechProcessingComplete = false;
@@ -115,6 +123,7 @@ class RealLifeReplayController extends ChangeNotifier {
   String? get responseTranscript => _responseTranscript;
   QualitativeFeedback? get feedback => _feedback;
   String? get message => _message;
+  String? get savedPhrase => _savedPhrase;
   bool get canRetryReconstructionSave =>
       _reconstruction != null && _case == null && _sourceTranscript != null;
   bool get isSavedCase => _loadedCaseId != null;
@@ -124,10 +133,12 @@ class RealLifeReplayController extends ChangeNotifier {
   IntelligenceOrbState get orbState => switch (_status) {
         RealLifeReplayStatus.describing ||
         RealLifeReplayStatus.recordingFollowUp ||
-        RealLifeReplayStatus.recordingResponse =>
+        RealLifeReplayStatus.recordingResponse ||
+        RealLifeReplayStatus.goldenBookRecording =>
           IntelligenceOrbState.listening,
         RealLifeReplayStatus.extracting ||
-        RealLifeReplayStatus.processingResponse =>
+        RealLifeReplayStatus.processingResponse ||
+        RealLifeReplayStatus.goldenBookProcessing =>
           _speechProcessingComplete
               ? IntelligenceOrbState.processingSpeechComplete
               : IntelligenceOrbState.processingSpeech,
@@ -272,7 +283,7 @@ class RealLifeReplayController extends ChangeNotifier {
     if (scenario == null || caseRecord == null) return;
     _setStatus(RealLifeReplayStatus.preparingPlayback);
     try {
-      await _repository.startSession(
+      _session = await _repository.startSession(
         caseId: caseRecord.id,
         clientId: _sessionClientId,
         locale: languageCode,
@@ -303,11 +314,13 @@ class RealLifeReplayController extends ChangeNotifier {
       final audio = await _recorder.stop();
       final transcription = await _speech.transcribe(audio);
       _responseTranscript = transcription.transcript;
-      final session = await _repository.startSession(
-        caseId: caseRecord.id,
-        clientId: _sessionClientId,
-        locale: languageCode,
-      );
+      final session = _session ??
+          await _repository.startSession(
+            caseId: caseRecord.id,
+            clientId: _sessionClientId,
+            locale: languageCode,
+          );
+      _session = session;
       final responseId = await _repository.saveResponse(
         sessionId: session.id,
         clientId: _responseClientId,
@@ -355,6 +368,8 @@ class RealLifeReplayController extends ChangeNotifier {
       _responseClientId = _createId();
       _responseTranscript = null;
       _feedback = null;
+      _session = null;
+      _savedPhrase = null;
       _setStatus(RealLifeReplayStatus.readyToReplay);
     } catch (_) {
       _setError(_strings.realLifeVariationError);
@@ -366,7 +381,73 @@ class RealLifeReplayController extends ChangeNotifier {
     _responseClientId = _createId();
     _responseTranscript = null;
     _feedback = null;
+    _session = null;
+    _savedPhrase = null;
     await playReplay();
+  }
+
+  Future<void> startGoldenBookCommand() async {
+    if (_feedback == null || _goldenBookCapture == null) return;
+    try {
+      if (await _startRecording()) {
+        _setStatus(RealLifeReplayStatus.goldenBookRecording);
+      }
+    } catch (_) {
+      _setError(_strings.voiceCommandStartError);
+    }
+  }
+
+  Future<void> submitGoldenBookCommand() async {
+    final capture = _goldenBookCapture;
+    final feedback = _feedback;
+    final scenario = _scenario;
+    if (capture == null || feedback == null || scenario == null) return;
+    _setStatus(RealLifeReplayStatus.goldenBookProcessing);
+    try {
+      final audio = await _recorder.stop();
+      final command = await _speech.transcribe(audio);
+      final result = await capture.resolveCommand(
+        command: command.transcript,
+        sourceSessionId: _session?.id,
+        conversationContext: {
+          'scenario': scenario.title,
+          'actor_statements': scenario.turns.map((turn) => turn.body).toList(),
+          'user_response': _responseTranscript,
+          'feedback_improvement': feedback.improvement,
+          'feedback_alternatives': feedback.alternatives,
+        },
+      );
+      final spoken = result.saved
+          ? _strings.savedSpoken(result.entry!.phrase)
+          : result.clarificationQuestion!;
+      if (result.saved) _savedPhrase = result.entry!.phrase;
+      await _completeSpeechProcessing();
+      await _playback.enqueue(
+        await _speech.synthesize(
+          SpeechLine(text: spoken, role: VoiceRole.intelligence),
+        ),
+      );
+      await _playback.playAll();
+      _setStatus(RealLifeReplayStatus.feedbackReady);
+    } catch (_) {
+      _setError(_strings.phraseSaveError);
+    }
+  }
+
+  Future<void> savePhrase(String phrase) async {
+    final capture = _goldenBookCapture;
+    if (capture == null) return;
+    try {
+      final entry = await capture.saveDirect(
+        phrase,
+        sourceSessionId: _session?.id,
+      );
+      _savedPhrase = entry.phrase;
+      notifyListeners();
+    } catch (_) {
+      _message = _strings.phraseSaveError;
+      notifyListeners();
+    }
   }
 
   Future<bool> _startRecording() async {
@@ -404,6 +485,8 @@ class RealLifeReplayController extends ChangeNotifier {
     _sourceTranscript = null;
     _responseTranscript = null;
     _feedback = null;
+    _session = null;
+    _savedPhrase = null;
     _followUpCount = 0;
     _loadedCaseId = null;
     _speechProcessingComplete = false;
@@ -423,7 +506,8 @@ class RealLifeReplayController extends ChangeNotifier {
     _status = status;
     _message = null;
     if (status == RealLifeReplayStatus.extracting ||
-        status == RealLifeReplayStatus.processingResponse) {
+        status == RealLifeReplayStatus.processingResponse ||
+        status == RealLifeReplayStatus.goldenBookProcessing) {
       _speechProcessingComplete = false;
     }
     if (status != RealLifeReplayStatus.playing &&
@@ -437,7 +521,8 @@ class RealLifeReplayController extends ChangeNotifier {
   bool _isRecordingStatus(RealLifeReplayStatus status) =>
       status == RealLifeReplayStatus.describing ||
       status == RealLifeReplayStatus.recordingFollowUp ||
-      status == RealLifeReplayStatus.recordingResponse;
+      status == RealLifeReplayStatus.recordingResponse ||
+      status == RealLifeReplayStatus.goldenBookRecording;
 
   void _setError(String message) {
     _status = RealLifeReplayStatus.error;

@@ -10,6 +10,7 @@ import 'package:konterreflex/src/core/theme/app_tokens.dart';
 import 'package:konterreflex/src/core/localization/localization_extension.dart';
 import 'package:konterreflex/src/core/localization/localization_providers.dart';
 import 'package:konterreflex/src/features/auth/application/auth_providers.dart';
+import 'package:konterreflex/src/features/golden_book/application/golden_book_providers.dart';
 import 'package:konterreflex/src/features/real_life/application/real_life_providers.dart';
 import 'package:konterreflex/src/features/real_life/application/real_life_replay_controller.dart';
 import 'package:konterreflex/src/features/real_life/domain/real_life_case.dart';
@@ -22,11 +23,15 @@ class RealLifeReplayScreen extends ConsumerStatefulWidget {
   const RealLifeReplayScreen({
     this.caseId,
     this.autoStart = false,
+    this.testController,
     super.key,
   });
 
   final String? caseId;
   final bool autoStart;
+
+  @visibleForTesting
+  final RealLifeReplayController? testController;
 
   @override
   ConsumerState<RealLifeReplayScreen> createState() =>
@@ -39,19 +44,7 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
   @override
   void initState() {
     super.initState();
-    final client = ref.read(supabaseClientProvider);
-    final language = ref.read(appLanguageProvider);
-    _controller = RealLifeReplayController(
-      permission: PermissionHandlerMicrophone(),
-      recorder: RecordVoiceRecorder(),
-      playback: JustAudioPlaybackQueue(),
-      speech: SupabaseSpeechGateway(client, language: language),
-      ai: ref.read(realLifeAiServiceProvider),
-      repository: ref.read(realLifeRepositoryProvider),
-      feedbackRepository: ref.read(feedbackRepositoryProvider),
-      strings: ref.read(appLocalizationsProvider),
-      languageCode: language.code,
-    );
+    _controller = widget.testController ?? _createController();
     final caseId = widget.caseId;
     if (caseId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -64,10 +57,43 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
     }
   }
 
+  RealLifeReplayController _createController() {
+    final client = ref.read(supabaseClientProvider);
+    final language = ref.read(appLanguageProvider);
+    return RealLifeReplayController(
+      permission: PermissionHandlerMicrophone(),
+      recorder: RecordVoiceRecorder(),
+      playback: JustAudioPlaybackQueue(),
+      speech: SupabaseSpeechGateway(client, language: language),
+      ai: ref.read(realLifeAiServiceProvider),
+      repository: ref.read(realLifeRepositoryProvider),
+      feedbackRepository: ref.read(feedbackRepositoryProvider),
+      goldenBookCapture: ref.read(goldenBookCaptureProvider),
+      strings: ref.read(appLocalizationsProvider),
+      languageCode: language.code,
+    );
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _savePhrase(String phrase) async {
+    final previous = _controller.savedPhrase;
+    await _controller.savePhrase(phrase);
+    if (_controller.savedPhrase != previous) {
+      ref.invalidate(goldenBookEntriesProvider);
+    }
+  }
+
+  Future<void> _submitGoldenBookCommand() async {
+    final previous = _controller.savedPhrase;
+    await _controller.submitGoldenBookCommand();
+    if (_controller.savedPhrase != previous) {
+      ref.invalidate(goldenBookEntriesProvider);
+    }
   }
 
   @override
@@ -120,10 +146,20 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
                       ],
                       if (_controller.feedback case final feedback?) ...[
                         const SizedBox(height: AppSpacing.lg),
-                        QualitativeFeedbackCard(feedback: feedback),
+                        QualitativeFeedbackCard(
+                          feedback: feedback,
+                          onSavePhrase: _savePhrase,
+                        ),
+                      ],
+                      if (_controller.savedPhrase case final phrase?) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(context.l10n.savedInGoldenBook(phrase)),
                       ],
                       const SizedBox(height: AppSpacing.xl),
-                      _Actions(controller: _controller),
+                      _Actions(
+                        controller: _controller,
+                        onSubmitGoldenBookCommand: _submitGoldenBookCommand,
+                      ),
                     ],
                   ),
                 ),
@@ -160,6 +196,10 @@ class _RealLifeReplayScreenState extends ConsumerState<RealLifeReplayScreen> {
           context.l10n.realLifePresentingFeedbackTitle,
         RealLifeReplayStatus.feedbackReady =>
           context.l10n.realLifeFeedbackTitle,
+        RealLifeReplayStatus.goldenBookRecording =>
+          context.l10n.trainingGoldenBookPrompt,
+        RealLifeReplayStatus.goldenBookProcessing =>
+          context.l10n.trainingGoldenBookProcessing,
         RealLifeReplayStatus.error => context.l10n.realLifeErrorTitle,
       };
 
@@ -235,9 +275,13 @@ class _Detail extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({required this.controller});
+  const _Actions({
+    required this.controller,
+    required this.onSubmitGoldenBookCommand,
+  });
 
   final RealLifeReplayController controller;
+  final VoidCallback onSubmitGoldenBookCommand;
 
   @override
   Widget build(BuildContext context) {
@@ -288,6 +332,11 @@ class _Actions extends StatelessWidget {
           icon: const Icon(Icons.stop_rounded),
           label: Text(context.l10n.finishAnswer),
         ),
+      RealLifeReplayStatus.goldenBookRecording => FilledButton.icon(
+          onPressed: onSubmitGoldenBookCommand,
+          icon: const Icon(Icons.stop_rounded),
+          label: Text(context.l10n.sendVoiceCommand),
+        ),
       RealLifeReplayStatus.feedbackReady => Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
@@ -297,6 +346,12 @@ class _Actions extends StatelessWidget {
               onPressed: controller.repeatReplay,
               icon: const Icon(Icons.replay_rounded),
               label: Text(context.l10n.repeatSameScene),
+            ),
+            OutlinedButton.icon(
+              key: const Key('real-life-golden-book-voice'),
+              onPressed: controller.startGoldenBookCommand,
+              icon: const Icon(Icons.bookmark_add_outlined),
+              label: Text(context.l10n.savePhraseByVoice),
             ),
             OutlinedButton(
               onPressed: controller.createSimilarVariation,
