@@ -84,7 +84,6 @@ export const realLifeReconstructV2 = [
   "learning objective while changing only non-sensitive setting details. Do not",
   "invent protected traits, diagnoses or a more dramatic conflict.",
   "",
-  "",
 ].join("\n");
 
 export const responseChallengeSessionV1 = [
