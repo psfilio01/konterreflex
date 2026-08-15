@@ -106,6 +106,9 @@ class SupabaseRealLifeRepository implements RealLifeRepository {
               provider: _metaText(row, 'provider'),
               model: _metaText(row, 'model'),
               promptVersion: _metaText(row, 'prompt_version'),
+              fallbackResponseCue: locale == 'en'
+                  ? 'Your turn. What do you say?'
+                  : 'Du bist dran. Was antwortest du?',
             ),
     );
   }

@@ -79,6 +79,7 @@ class _AdminScenarioStudioState extends ConsumerState<AdminScenarioStudio> {
                 onQuery: (value) => setState(() => _query = value),
                 onCreate: () => _edit(null, voiceOptions),
                 onGenerate: _generate,
+                onImport: _importJson,
                 onReview: _review,
               ),
               Expanded(
@@ -190,6 +191,69 @@ class _AdminScenarioStudioState extends ConsumerState<AdminScenarioStudio> {
     });
   }
 
+  Future<void> _importJson() async {
+    final source = TextEditingController();
+    final payload = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Szenarien als JSON importieren'),
+        content: SizedBox(
+          width: 720,
+          child: TextField(
+            controller: source,
+            minLines: 12,
+            maxLines: 22,
+            decoration: const InputDecoration(
+              labelText: 'Konterreflex JSON-Batch',
+              alignLabelWithHint: true,
+              hintText:
+                  '{"schema_version":"konterreflex.scenarios.v1","locale":"de","scenarios":[...]}',
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, source.text),
+            child: const Text('Als Entwürfe importieren'),
+          ),
+        ],
+      ),
+    );
+    source.dispose();
+    if (payload == null || payload.trim().isEmpty || _busy) return;
+    setState(() => _busy = true);
+    try {
+      final ids = await ref
+          .read(adminScenarioImportProvider)
+          .importDrafts(payload.trim());
+      _status = AdminScenarioStatus.draft;
+      ref.invalidate(adminScenariosProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${ids.length} Entwürfe importiert.')),
+        );
+      }
+    } on FormatException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error.message.toString())),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Der JSON-Import konnte nicht gespeichert werden.'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _review(AdminScenarioStatus status, {List<String>? ids}) async {
     final targets = ids ?? _selected.toList();
     if (targets.isEmpty) return;
@@ -251,6 +315,7 @@ class _Toolbar extends StatelessWidget {
       required this.onQuery,
       required this.onCreate,
       required this.onGenerate,
+      required this.onImport,
       required this.onReview});
   final AdminScenarioStatus? status;
   final String? category;
@@ -262,6 +327,7 @@ class _Toolbar extends StatelessWidget {
   final ValueChanged<String> onQuery;
   final VoidCallback onCreate;
   final VoidCallback onGenerate;
+  final VoidCallback onImport;
   final ValueChanged<AdminScenarioStatus> onReview;
 
   @override
@@ -310,6 +376,10 @@ class _Toolbar extends StatelessWidget {
                   onPressed: busy ? null : onGenerate,
                   icon: const Icon(Icons.auto_awesome_outlined),
                   label: const Text('KI-Batch')),
+              OutlinedButton.icon(
+                  onPressed: busy ? null : onImport,
+                  icon: const Icon(Icons.data_object_rounded),
+                  label: const Text('JSON-Import')),
               if (selectedCount > 0) ...[
                 Text('$selectedCount gewählt'),
                 TextButton(
@@ -359,7 +429,7 @@ class _ScenarioReviewCard extends StatelessWidget {
               onChanged: (value) => onSelected(value ?? false)),
           title: Text(scenario.title),
           subtitle: Text(
-              '${scenario.category} · ${_statusLabel(scenario.status)} · Safety: ${_safetyLabel(scenario.safetyDecision)} · ${scenario.source}'),
+              '${scenario.category} · ${scenario.locale.toUpperCase()} · ${_statusLabel(scenario.status)} · Safety: ${_safetyLabel(scenario.safetyDecision)} · ${scenario.source}'),
           childrenPadding: const EdgeInsets.fromLTRB(
               AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
           children: [
@@ -380,7 +450,16 @@ class _ScenarioReviewCard extends StatelessWidget {
             for (final turn in scenario.turns)
               Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('${turn.characterName}: ${turn.body}')),
+                  child: Text([
+                    if (turn.stageDirection.isNotEmpty)
+                      'Moderator: ${turn.stageDirection}',
+                    '${turn.characterName}: ${turn.body}',
+                  ].join('\n'))),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Antwortsignal: ${scenario.responseCue}'),
+            ),
             const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: AppSpacing.sm,
@@ -442,11 +521,13 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
   late final TextEditingController _title;
   late final TextEditingController _category;
   late final TextEditingController _intro;
+  late final TextEditingController _responseCue;
   late final TextEditingController _trigger;
   late final TextEditingController _intent;
   late final TextEditingController _focus;
   late final List<_CharacterFields> _characters;
   late final List<_TurnFields> _turns;
+  late String _locale;
 
   @override
   void initState() {
@@ -455,6 +536,9 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
     _title = TextEditingController(text: scenario?.title);
     _category = TextEditingController(text: scenario?.category);
     _intro = TextEditingController(text: scenario?.moderatorIntro);
+    _responseCue = TextEditingController(
+      text: scenario?.responseCue ?? 'Du bist dran. Was antwortest du?',
+    );
     _trigger = TextEditingController(text: scenario?.triggerStatement);
     _intent = TextEditingController(text: scenario?.underlyingIntent);
     _focus = TextEditingController(text: scenario?.evaluationFocus.join(', '));
@@ -466,6 +550,7 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
             const [AdminTurn(characterName: '', body: '', stageDirection: '')])
         .map(_TurnFields.fromTurn)
         .toList();
+    _locale = scenario?.locale ?? 'de';
   }
 
   @override
@@ -474,6 +559,7 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
       _title,
       _category,
       _intro,
+      _responseCue,
       _trigger,
       _intent,
       _focus
@@ -523,16 +609,46 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
                                   labelText: 'Kategorie')))
                     ]),
                     const SizedBox(height: AppSpacing.md),
+                    DropdownButtonFormField<String>(
+                      value: _locale,
+                      decoration: const InputDecoration(labelText: 'Sprache'),
+                      items: const [
+                        DropdownMenuItem(value: 'de', child: Text('Deutsch')),
+                        DropdownMenuItem(value: 'en', child: Text('Englisch')),
+                      ],
+                      onChanged: (value) {
+                        final next = value ?? 'de';
+                        final currentDefault = _locale == 'en'
+                            ? 'Your turn. What do you say?'
+                            : 'Du bist dran. Was antwortest du?';
+                        final usesDefault =
+                            _responseCue.text.trim() == currentDefault;
+                        setState(() {
+                          _locale = next;
+                          if (usesDefault) {
+                            _responseCue.text = next == 'en'
+                                ? 'Your turn. What do you say?'
+                                : 'Du bist dran. Was antwortest du?';
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.md),
                     TextField(
                         controller: _intro,
-                        maxLines: 2,
+                        maxLines: 4,
                         decoration: const InputDecoration(
-                            labelText: 'Kurze Moderation')),
+                            labelText: 'Moderator-Kontext · 2 bis 4 Sätze')),
                     const SizedBox(height: AppSpacing.md),
                     TextField(
                         controller: _trigger,
                         decoration: const InputDecoration(
                             labelText: 'Entscheidender Satz')),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                        controller: _responseCue,
+                        decoration: const InputDecoration(
+                            labelText: 'Antwortsignal des Moderators')),
                     const SizedBox(height: AppSpacing.md),
                     TextField(
                         controller: _intent,
@@ -669,8 +785,8 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
         Expanded(
             child: TextField(
                 controller: value.direction,
-                decoration:
-                    const InputDecoration(labelText: 'Regiehinweis optional'))),
+                decoration: const InputDecoration(
+                    labelText: 'Moderator-Regie vor dem Satz'))),
         IconButton(
             onPressed: _turns.length == 1
                 ? null
@@ -701,11 +817,26 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
     if (_title.text.trim().isEmpty ||
         _category.text.trim().isEmpty ||
         _intro.text.trim().isEmpty ||
+        _responseCue.text.trim().isEmpty ||
         characters.isEmpty ||
-        turns.isEmpty) {
+        turns.isEmpty ||
+        turns.last.stageDirection.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text(
-              'Titel, Kategorie, Moderation, Figur und gesprochener Satz sind erforderlich.')));
+              'Titel, Kategorie, Kontext, Antwortsignal, Figur, Satz und die letzte Moderator-Regie sind erforderlich.')));
+      return;
+    }
+    final introWords = _wordCount(_intro.text);
+    final cueWords = _wordCount(_responseCue.text);
+    if (introWords < 25 ||
+        introWords > 110 ||
+        cueWords < 2 ||
+        cueWords > 16 ||
+        !_responseCue.text.trim().endsWith('?') ||
+        turns.last.body != _trigger.text.trim()) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Der Kontext braucht 25 bis 110 Wörter, das Antwortsignal 2 bis 16 Wörter und ein ?, und der letzte Satz muss dem entscheidenden Satz entsprechen.')));
       return;
     }
     Navigator.pop(
@@ -714,7 +845,9 @@ class _ScenarioEditorDialogState extends State<_ScenarioEditorDialog> {
           id: widget.scenario?.id,
           title: _title.text.trim(),
           category: _category.text.trim(),
+          locale: _locale,
           moderatorIntro: _intro.text.trim(),
+          responseCue: _responseCue.text.trim(),
           triggerStatement: _trigger.text.trim(),
           underlyingIntent: _intent.text.trim(),
           evaluationFocus: _focus.text
@@ -763,3 +896,6 @@ class _TurnFields {
     direction.dispose();
   }
 }
+
+int _wordCount(String value) =>
+    value.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).length;

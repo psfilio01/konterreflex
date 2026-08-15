@@ -26,7 +26,7 @@ class SupabaseAdminScenarioRepository implements AdminScenarioRepository {
       (throw const AuthException('Authentication required.'));
 
   static const selection =
-      'id,title,category,moderator_intro,trigger_statement,underlying_intent,evaluation_focus,status,source,content_revision,scenario_characters(id,name,description,voice_id,sort_order),scenario_turns(character_id,body,stage_direction,sort_order),scenario_safety_reviews(decision,content_revision,created_at)';
+      'id,title,category,locale,moderator_intro,response_cue,trigger_statement,underlying_intent,evaluation_focus,status,source,content_revision,scenario_characters(id,name,description,voice_id,sort_order),scenario_turns(character_id,body,stage_direction,sort_order),scenario_safety_reviews(decision,content_revision,created_at)';
 
   @override
   Future<List<AdminScenario>> fetchAll() async {
@@ -42,7 +42,9 @@ class SupabaseAdminScenarioRepository implements AdminScenarioRepository {
     final payload = {
       'title': scenario.title.trim(),
       'category': scenario.category.trim(),
+      'locale': scenario.locale,
       'moderator_intro': scenario.moderatorIntro.trim(),
+      'response_cue': scenario.responseCue.trim(),
       'trigger_statement': scenario.triggerStatement.trim(),
       'underlying_intent': scenario.underlyingIntent.trim(),
       'evaluation_focus': scenario.evaluationFocus,

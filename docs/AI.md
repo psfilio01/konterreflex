@@ -25,6 +25,12 @@ Implement a small internal adapter instead of spreading an external SDK througho
 ## Output discipline
 Use versioned JSON schemas. Store prompt version, provider and model name with generated artifacts for traceability.
 
+Scenario generation and Real Life reconstruction share the voice-first scene
+contract in `docs/SCENARIO_FORMAT.md`: substantial moderator context, optional
+moderator-spoken stage directions, actor turns and an explicit final response
+cue. New generated content uses the versioned schema; stored legacy content is
+migrated with a localized cue.
+
 Visual feedback uses categorical signals rather than calculated scores. The
 legacy evaluation task remains available for older app versions; new clients use
 the separately versioned visual schema.

@@ -4,7 +4,9 @@ enum VoiceRole { moderator, actor, intelligence }
 
 enum SharedSpeechResourceKind {
   scenarioIntro('scenario_intro'),
+  scenarioStageDirection('scenario_stage_direction'),
   scenarioTurn('scenario_turn'),
+  scenarioResponseCue('scenario_response_cue'),
   challengePrompt('challenge_prompt');
 
   const SharedSpeechResourceKind(this.wireName);

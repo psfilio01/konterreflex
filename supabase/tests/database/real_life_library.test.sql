@@ -4,7 +4,7 @@ select plan(16);
 
 select ok(
   public.is_valid_real_life_reconstruction(
-    '{"title":"Teamgespräch","moderator_intro":"Du bist wieder im Gespräch.","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Alex","body":"Wir müssen weiter.","stage_direction":""}]}'::jsonb
+    '{"title":"Teamgespräch","moderator_intro":"Du bist wieder im Gespräch.","response_cue":"Was antwortest du?","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Alex","body":"Wir müssen weiter.","stage_direction":""}]}'::jsonb
   ),
   'a complete reconstruction snapshot is valid'
 );
@@ -17,14 +17,14 @@ select isnt(
 );
 select isnt(
   public.is_valid_real_life_reconstruction(
-    '{"title":"Teamgespräch","moderator_intro":"Intro","characters":[{"name":"Alex","description":"Teammitglied","private_note":"secret"}],"turns":[{"character_name":"Alex","body":"Weiter.","stage_direction":""}]}'::jsonb
+    '{"title":"Teamgespräch","moderator_intro":"Intro","response_cue":"Was antwortest du?","characters":[{"name":"Alex","description":"Teammitglied","private_note":"secret"}],"turns":[{"character_name":"Alex","body":"Weiter.","stage_direction":""}]}'::jsonb
   ),
   true,
   'unexpected nested model fields are rejected'
 );
 select isnt(
   public.is_valid_real_life_reconstruction(
-    '{"title":"Teamgespräch","moderator_intro":"Intro","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Unknown","body":"Weiter.","stage_direction":""}]}'::jsonb
+    '{"title":"Teamgespräch","moderator_intro":"Intro","response_cue":"Was antwortest du?","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Unknown","body":"Weiter.","stage_direction":""}]}'::jsonb
   ),
   true,
   'dialogue may only reference a declared character'
@@ -49,7 +49,7 @@ select results_eq(
       '{"setting":"Teamrunde"}'::jsonb,
       'de',
       'Teamgespräch',
-      '{"title":"Teamgespräch","moderator_intro":"Du bist wieder im Gespräch.","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Alex","body":"Wir müssen weiter.","stage_direction":""}]}'::jsonb,
+      '{"title":"Teamgespräch","moderator_intro":"Du bist wieder im Gespräch.","response_cue":"Was antwortest du?","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Alex","body":"Wir müssen weiter.","stage_direction":""}]}'::jsonb,
       '{"provider":"mock","model":"mock","prompt_version":"v2"}'::jsonb
     )
   $$,
@@ -73,7 +73,7 @@ select lives_ok(
       '{"setting":"Teamrunde"}'::jsonb,
       'de',
       'Teamgespräch',
-      '{"title":"Teamgespräch","moderator_intro":"Du bist wieder im Gespräch.","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Alex","body":"Wir müssen weiter.","stage_direction":""}]}'::jsonb,
+      '{"title":"Teamgespräch","moderator_intro":"Du bist wieder im Gespräch.","response_cue":"Was antwortest du?","characters":[{"name":"Alex","description":"Teammitglied"}],"turns":[{"character_name":"Alex","body":"Wir müssen weiter.","stage_direction":""}]}'::jsonb,
       '{"provider":"mock"}'::jsonb
     )
   $$,
@@ -91,7 +91,7 @@ select throws_ok(
     ) values (
       (select id from public.real_life_cases where client_id = 'b2000000-0000-4000-8000-000000000001'),
       'b1000000-0000-4000-8000-000000000002','en','Stolen',
-      '{"title":"Stolen","moderator_intro":"Intro","characters":[{"name":"A","description":""}],"turns":[{"character_name":"A","body":"Line","stage_direction":""}]}'::jsonb
+      '{"title":"Stolen","moderator_intro":"Intro","response_cue":"What do you say?","characters":[{"name":"A","description":""}],"turns":[{"character_name":"A","body":"Line","stage_direction":""}]}'::jsonb
     )
   $$,
   '42501',

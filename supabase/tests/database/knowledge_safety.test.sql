@@ -10,8 +10,8 @@ update public.user_roles set role = 'admin' where user_id = 'cccccccc-3333-4333-
 set local role authenticated;
 select set_config('request.jwt.claim.sub', 'cccccccc-3333-4333-8333-cccccccccccc', true);
 
-insert into public.scenarios (id,title,category,moderator_intro,status,source,created_by)
-values ('a0000000-0000-4000-8000-000000000001','Safety Entwurf','Test','Kurzer Rahmen','draft','generated','cccccccc-3333-4333-8333-cccccccccccc');
+insert into public.scenarios (id,title,category,moderator_intro,response_cue,status,source,created_by)
+values ('a0000000-0000-4000-8000-000000000001','Safety Entwurf','Test','Kurzer Rahmen','Was antwortest du?','draft','generated','cccccccc-3333-4333-8333-cccccccccccc');
 
 select throws_ok(
   $$ update public.scenarios set status = 'active' where id = 'a0000000-0000-4000-8000-000000000001' $$,

@@ -24,10 +24,10 @@ insert into auth.users (
   ('a1000000-0000-4000-8000-000000000002','00000000-0000-0000-0000-000000000000','authenticated','authenticated','adaptive-two@example.test','',now(),'{}','{}',now(),now());
 
 update public.scenarios set status = 'archived';
-insert into public.scenarios (id,title,category,moderator_intro,status,source,locale) values
-  ('a2000000-0000-4000-8000-000000000001','Due','Test','Intro','active','curated','de'),
-  ('a2000000-0000-4000-8000-000000000002','Unseen','Test','Intro','active','curated','de'),
-  ('a2000000-0000-4000-8000-000000000003','English','Test','Intro','active','curated','en');
+insert into public.scenarios (id,title,category,moderator_intro,response_cue,status,source,locale) values
+  ('a2000000-0000-4000-8000-000000000001','Due','Test','Intro','Was antwortest du?','active','curated','de'),
+  ('a2000000-0000-4000-8000-000000000002','Unseen','Test','Intro','Was antwortest du?','active','curated','de'),
+  ('a2000000-0000-4000-8000-000000000003','English','Test','Intro','What do you say?','active','curated','en');
 
 insert into public.real_life_cases (id,user_id,source_transcript,extracted_context) values
   ('a3000000-0000-4000-8000-000000000001','a1000000-0000-4000-8000-000000000001','Owner case','{"setting":"office"}'),

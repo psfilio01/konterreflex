@@ -21,11 +21,12 @@ Deno.test("bundles every registered AI prompt with its task", () => {
   }
 });
 
-Deno.test("real-life reconstruction requires a reusable short title", () => {
+Deno.test("real-life reconstruction requires title and response cue", () => {
   const schema = taskRegistry["real_life.reconstruct"].outputSchema;
   const valid = {
     title: "Unterbrochen im Gespräch",
     moderator_intro: "Du bist wieder im Gespräch.",
+    response_cue: "Was antwortest du?",
     characters: [{ name: "Alex", description: "Teammitglied" }],
     turns: [{
       character_name: "Alex",
@@ -39,5 +40,11 @@ Deno.test("real-life reconstruction requires a reusable short title", () => {
   assert(
     !validateSchema(withoutTitle, schema).valid,
     "expected a required reconstruction title",
+  );
+  const withoutCue = { ...valid } as Record<string, unknown>;
+  delete withoutCue.response_cue;
+  assert(
+    !validateSchema(withoutCue, schema).valid,
+    "expected a required response cue",
   );
 });

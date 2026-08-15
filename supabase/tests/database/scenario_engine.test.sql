@@ -13,11 +13,12 @@ values (
   '{}', '{}', now(), now()
 );
 
-insert into public.scenarios (id, title, category, status, source)
+insert into public.scenarios (id, title, category, response_cue, status, source)
 values (
   '10000000-0000-0000-0000-000000000099',
   'Nicht freigegeben',
   'Test',
+  'Was antwortest du?',
   'draft',
   'generated'
 );
