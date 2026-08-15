@@ -141,6 +141,8 @@ class RealLifeReconstruction {
     String provider = 'stored',
     String model = 'stored',
     String promptVersion = 'stored',
+    String fallbackResponseCue = 'Du bist dran. Was antwortest du?',
+    bool requireRichStructure = false,
   }) {
     final rawCharacters = json['characters'];
     final rawTurns = json['turns'];
@@ -179,15 +181,38 @@ class RealLifeReconstruction {
         ),
       );
     }
+    final moderatorIntro = _text(json, 'moderator_intro');
+    final responseCue =
+        _optionalText(json, 'response_cue') ?? fallbackResponseCue;
+    final reconstructedTitle =
+        json['title'] is String ? (json['title'] as String).trim() : title;
+    if (requireRichStructure &&
+        (_wordCount(reconstructedTitle) < 2 ||
+            _wordCount(reconstructedTitle) > 6 ||
+            reconstructedTitle.length > 80 ||
+            _wordCount(moderatorIntro) < 25 ||
+            _wordCount(moderatorIntro) > 110 ||
+            _wordCount(responseCue) < 2 ||
+            _wordCount(responseCue) > 16 ||
+            !responseCue.endsWith('?') ||
+            characters.isEmpty ||
+            characters.length > 4 ||
+            turns.isEmpty ||
+            turns.length > 8 ||
+            turns.last.stageDirection?.isNotEmpty != true ||
+            _wordCount(turns.last.stageDirection!) < 4 ||
+            _wordCount(turns.last.stageDirection!) > 30)) {
+      throw const FormatException(
+        'Real-life reconstruction violates the voice-first structure.',
+      );
+    }
     return RealLifeReconstruction(
       scenario: TrainingScenario(
         id: id,
-        title: json['title'] is String &&
-                (json['title'] as String).trim().isNotEmpty
-            ? (json['title'] as String).trim()
-            : title,
+        title: reconstructedTitle.isNotEmpty ? reconstructedTitle : title,
         category: category,
-        moderatorIntro: _text(json, 'moderator_intro'),
+        moderatorIntro: moderatorIntro,
+        responseCue: responseCue,
         characters: characters,
         turns: turns,
       ),
@@ -209,6 +234,7 @@ class RealLifeReconstruction {
     return {
       'title': scenario.title,
       'moderator_intro': scenario.moderatorIntro,
+      'response_cue': scenario.responseCue,
       'characters': [
         for (final character in scenario.characters)
           {
@@ -239,3 +265,14 @@ String _text(Map<String, dynamic> json, String key) {
   if (value is! String) throw FormatException('$key must be text.');
   return value.trim();
 }
+
+String? _optionalText(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! String) throw FormatException('$key must be text.');
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+int _wordCount(String value) =>
+    value.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).length;

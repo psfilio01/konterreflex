@@ -1,6 +1,16 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(11);
+
+insert into auth.users (
+  id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values (
+  '93000000-0000-4000-8000-000000000018',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated', 'authenticated', 'speech-context@example.test', '', now(),
+  '{}', '{}', now(), now()
+);
 
 select has_table(
   'public',
@@ -23,6 +33,49 @@ select throws_ok(
 );
 
 set local role service_role;
+
+insert into public.scenarios (
+  id,title,category,moderator_intro,response_cue,status,source,locale
+) values (
+  '90000000-0000-4000-8000-000000000018',
+  'Context cache',
+  'Test',
+  'Ein ausführlicher Kontext.',
+  'Was antwortest du?',
+  'draft',
+  'curated',
+  'de'
+);
+insert into public.scenario_characters (
+  id,scenario_id,name,description,sort_order
+) values (
+  '91000000-0000-4000-8000-000000000018',
+  '90000000-0000-4000-8000-000000000018',
+  'Alex',
+  'Testfigur',
+  0
+);
+insert into public.scenario_turns (
+  id,scenario_id,character_id,body,stage_direction,sort_order
+) values (
+  '92000000-0000-4000-8000-000000000018',
+  '90000000-0000-4000-8000-000000000018',
+  '91000000-0000-4000-8000-000000000018',
+  'Das sehe ich anders.',
+  'Alex schaut dich direkt an und sagt:',
+  0
+);
+insert into public.scenario_safety_reviews (
+  scenario_id,content_revision,decision,rationale,provider,model,
+  prompt_version,reviewed_by
+) select
+  id,content_revision,'pass','Neutrale Testszene.','mock','mock','test',
+  '93000000-0000-4000-8000-000000000018'
+from public.scenarios
+where id = '90000000-0000-4000-8000-000000000018';
+update public.scenarios
+set status = 'active'
+where id = '90000000-0000-4000-8000-000000000018';
 
 select results_eq(
   $$
@@ -48,6 +101,32 @@ select is(
   ),
   0::bigint,
   'a shared resource cannot be reused for another language'
+);
+
+select results_eq(
+  $$
+    select speech_text, voice_role
+    from public.resolve_shared_speech_resource(
+      'scenario_stage_direction',
+      '92000000-0000-4000-8000-000000000018',
+      'de'
+    )
+  $$,
+  $$ values ('Alex schaut dich direkt an und sagt:'::text, 'moderator'::text) $$,
+  'stage directions resolve as canonical moderator content'
+);
+
+select results_eq(
+  $$
+    select speech_text, voice_role
+    from public.resolve_shared_speech_resource(
+      'scenario_response_cue',
+      '90000000-0000-4000-8000-000000000018',
+      'de'
+    )
+  $$,
+  $$ values ('Was antwortest du?'::text, 'moderator'::text) $$,
+  'response cues resolve as canonical moderator content'
 );
 
 select is(

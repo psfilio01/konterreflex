@@ -29,6 +29,7 @@ class SupabaseScenarioRepository implements ScenarioRepository {
     title,
     category,
     moderator_intro,
+    response_cue,
     scenario_characters(id,name,description,voice_id,sort_order),
     scenario_turns(id,character_id,body,stage_direction,sort_order)
   ''';

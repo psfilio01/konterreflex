@@ -120,11 +120,13 @@ void main() {
       VoiceRole.moderator,
       VoiceRole.actor,
       VoiceRole.actor,
+      VoiceRole.moderator,
     ]);
     expect(testScenario.speechLines.map((line) => line.voiceId), [
       null,
       'voice-a',
       'voice-b',
+      null,
     ]);
     expect(
       testScenario.speechLines.first.sharedReference?.kind,
@@ -138,6 +140,7 @@ void main() {
       'title': 'Szene',
       'category': 'Arbeit',
       'moderator_intro': 'Einleitung.',
+      'response_cue': 'Was antwortest du?',
       'scenario_characters': [
         {
           'id': '20000000-0000-0000-0000-000000000001',
@@ -151,6 +154,7 @@ void main() {
           'id': '30000000-0000-0000-0000-000000000001',
           'character_id': '20000000-0000-0000-0000-000000000001',
           'body': 'Einwand.',
+          'stage_direction': 'Alex schaut dich direkt an und sagt:',
           'sort_order': 0,
         }
       ],
@@ -158,11 +162,19 @@ void main() {
 
     expect(
       scenario.speechLines[1].sharedReference?.kind,
+      SharedSpeechResourceKind.scenarioStageDirection,
+    );
+    expect(
+      scenario.speechLines[2].sharedReference?.kind,
       SharedSpeechResourceKind.scenarioTurn,
     );
     expect(
-      scenario.speechLines[1].sharedReference?.id,
+      scenario.speechLines[2].sharedReference?.id,
       '30000000-0000-0000-0000-000000000001',
+    );
+    expect(
+      scenario.speechLines.last.sharedReference?.kind,
+      SharedSpeechResourceKind.scenarioResponseCue,
     );
   });
 

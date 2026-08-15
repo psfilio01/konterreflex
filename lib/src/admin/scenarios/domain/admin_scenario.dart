@@ -26,6 +26,7 @@ class AdminScenario {
     required this.title,
     required this.category,
     required this.moderatorIntro,
+    this.responseCue = 'Du bist dran. Was antwortest du?',
     required this.triggerStatement,
     required this.underlyingIntent,
     required this.evaluationFocus,
@@ -33,15 +34,21 @@ class AdminScenario {
     required this.turns,
     this.status = AdminScenarioStatus.draft,
     this.source = 'manual',
+    this.locale = 'de',
     this.contentRevision = 1,
     this.safetyDecision,
   });
 
-  factory AdminScenario.fromGateway(Map<String, dynamic> data) {
+  factory AdminScenario.fromGateway(
+    Map<String, dynamic> data, {
+    String locale = 'de',
+    String source = 'generated',
+  }) {
     const expected = {
       'title',
       'category',
       'moderator_intro',
+      'response_cue',
       'trigger_statement',
       'underlying_intent',
       'evaluation_focus',
@@ -65,16 +72,56 @@ class AdminScenario {
           body: _text(value, 'body'),
           stageDirection: _text(value, 'stage_direction'));
     }).toList();
+    final moderatorIntro = _text(data, 'moderator_intro');
+    final responseCue = _text(data, 'response_cue');
+    final triggerStatement = _text(data, 'trigger_statement');
+    final evaluationFocus = (data['evaluation_focus'] as List).cast<String>();
+    final characterNames = characters.map((item) => item.name).toSet();
+    final title = _text(data, 'title');
+    final category = _text(data, 'category');
+    if (_wordCount(title) < 2 ||
+        _wordCount(title) > 8 ||
+        title.length > 80 ||
+        category.length > 80 ||
+        _wordCount(moderatorIntro) < 25 ||
+        _wordCount(moderatorIntro) > 110 ||
+        _wordCount(responseCue) < 2 ||
+        _wordCount(responseCue) > 16 ||
+        !responseCue.endsWith('?') ||
+        evaluationFocus.isEmpty ||
+        evaluationFocus.length > 6 ||
+        evaluationFocus.any((value) => value.trim().isEmpty) ||
+        characters.isEmpty ||
+        characters.length > 4 ||
+        characterNames.length != characters.length ||
+        characters.any((character) => character.description.isEmpty) ||
+        turns.isEmpty ||
+        turns.length > 8 ||
+        turns.any((turn) => !characterNames.contains(turn.characterName)) ||
+        turns.any((turn) =>
+            turn.body.isEmpty ||
+            _wordCount(turn.body) > 60 ||
+            (turn.stageDirection.isNotEmpty &&
+                (_wordCount(turn.stageDirection) < 4 ||
+                    _wordCount(turn.stageDirection) > 30))) ||
+        turns.last.stageDirection.isEmpty ||
+        turns.last.body != triggerStatement) {
+      throw const FormatException(
+        'Generated scenario violates the voice-first structure.',
+      );
+    }
     return AdminScenario(
-      title: _text(data, 'title'),
-      category: _text(data, 'category'),
-      moderatorIntro: _text(data, 'moderator_intro'),
-      triggerStatement: _text(data, 'trigger_statement'),
+      title: title,
+      category: category,
+      moderatorIntro: moderatorIntro,
+      responseCue: responseCue,
+      triggerStatement: triggerStatement,
       underlyingIntent: _text(data, 'underlying_intent'),
-      evaluationFocus: (data['evaluation_focus'] as List).cast<String>(),
+      evaluationFocus: evaluationFocus,
       characters: characters,
       turns: turns,
-      source: 'generated',
+      source: source,
+      locale: locale,
     );
   }
 
@@ -105,12 +152,17 @@ class AdminScenario {
       title: json['title'] as String,
       category: json['category'] as String,
       moderatorIntro: json['moderator_intro'] as String? ?? '',
+      responseCue: json['response_cue'] as String? ??
+          ((json['locale'] as String? ?? 'de') == 'en'
+              ? 'Your turn. What do you say?'
+              : 'Du bist dran. Was antwortest du?'),
       triggerStatement: json['trigger_statement'] as String? ?? '',
       underlyingIntent: json['underlying_intent'] as String? ?? '',
       evaluationFocus:
           (json['evaluation_focus'] as List? ?? const []).cast<String>(),
       status: AdminScenarioStatus.values.byName(json['status'] as String),
       source: json['source'] as String,
+      locale: json['locale'] as String? ?? 'de',
       contentRevision: revision,
       safetyDecision:
           reviews.isEmpty ? null : reviews.first['decision'] as String,
@@ -133,6 +185,7 @@ class AdminScenario {
   final String title;
   final String category;
   final String moderatorIntro;
+  final String responseCue;
   final String triggerStatement;
   final String underlyingIntent;
   final List<String> evaluationFocus;
@@ -140,6 +193,7 @@ class AdminScenario {
   final List<AdminTurn> turns;
   final AdminScenarioStatus status;
   final String source;
+  final String locale;
   final int contentRevision;
   final String? safetyDecision;
 
@@ -159,6 +213,7 @@ class AdminScenario {
       title: title,
       category: category,
       moderatorIntro: moderatorIntro,
+      responseCue: responseCue,
       characters: actorByName.values.toList(),
       turns: [
         for (var index = 0; index < turns.length; index++)
@@ -239,3 +294,6 @@ String _text(Map<String, dynamic> data, String key) {
   if (value is! String) throw FormatException('$key must be text.');
   return value.trim();
 }
+
+int _wordCount(String value) =>
+    value.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).length;

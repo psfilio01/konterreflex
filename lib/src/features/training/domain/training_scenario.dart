@@ -40,6 +40,7 @@ class TrainingScenario {
     required this.moderatorIntro,
     required this.characters,
     required this.turns,
+    this.responseCue = 'Du bist dran. Was antwortest du?',
     this.sharedAudioEligible = false,
   });
 
@@ -72,6 +73,8 @@ class TrainingScenario {
       title: json['title'] as String,
       category: json['category'] as String,
       moderatorIntro: json['moderator_intro'] as String,
+      responseCue:
+          json['response_cue'] as String? ?? 'Du bist dran. Was antwortest du?',
       characters: characters,
       turns: turns,
       sharedAudioEligible: true,
@@ -82,6 +85,7 @@ class TrainingScenario {
   final String title;
   final String category;
   final String moderatorIntro;
+  final String responseCue;
   final List<ScenarioCharacter> characters;
   final List<ScenarioTurn> turns;
   final bool sharedAudioEligible;
@@ -101,7 +105,18 @@ class TrainingScenario {
               )
             : null,
       ),
-      for (final turn in turns)
+      for (final turn in turns) ...[
+        if (turn.stageDirection?.trim().isNotEmpty == true)
+          SpeechLine(
+            text: turn.stageDirection!.trim(),
+            role: VoiceRole.moderator,
+            sharedReference: !sharedAudioEligible || turn.id == null
+                ? null
+                : SharedSpeechReference(
+                    kind: SharedSpeechResourceKind.scenarioStageDirection,
+                    id: turn.id!,
+                  ),
+          ),
         SpeechLine(
           text: turn.body,
           role: VoiceRole.actor,
@@ -113,6 +128,17 @@ class TrainingScenario {
                   id: turn.id!,
                 ),
         ),
+      ],
+      SpeechLine(
+        text: responseCue,
+        role: VoiceRole.moderator,
+        sharedReference: sharedAudioEligible
+            ? SharedSpeechReference(
+                kind: SharedSpeechResourceKind.scenarioResponseCue,
+                id: id,
+              )
+            : null,
+      ),
     ];
   }
 }

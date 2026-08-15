@@ -52,6 +52,7 @@ class GatewayRealLifeAiService implements RealLifeAiService {
       provider: result.provider,
       model: result.model,
       promptVersion: result.promptVersion,
+      requireRichStructure: true,
     );
   }
 }

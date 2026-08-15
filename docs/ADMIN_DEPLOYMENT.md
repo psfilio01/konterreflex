@@ -31,7 +31,9 @@ both targets write to the same local output directory.
    and an appropriate `Referrer-Policy`.
 5. Restrict deployment access and protect the production branch/environment.
 6. Never deploy a service-role key, AI key, speech key or Stripe secret.
-7. Smoke-test scenario preview, safety review, approval, rejection and archive.
+7. Smoke-test manual editing, strict JSON batch import, scenario preview, safety
+   review, approval, rejection and archive. Imported scenarios must remain drafts
+   until a current safety review passes.
 
 Removing the admin web route from public navigation is not an authorization
 control. Supabase RLS remains mandatory even on a private network.

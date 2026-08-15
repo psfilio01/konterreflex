@@ -261,6 +261,32 @@ void main() {
     expect(() => RealLifeExtraction.fromJson(json), throwsFormatException);
   });
 
+  test('new reconstruction requires rich context and a clear handoff', () {
+    expect(
+      () => RealLifeReconstruction.fromJson(
+        {
+          'title': 'Unterbrochen im Gespräch',
+          'moderator_intro':
+              'Du sitzt nach einem langen Termin mit einem Teammitglied in einem ruhigen Besprechungsraum. Ihr habt gerade über einen wichtigen Vorschlag gesprochen, als die andere Person deinen Beitrag vor der Gruppe offen infrage stellt.',
+          'response_cue': 'Was antwortest du?',
+          'characters': [
+            {'name': 'Alex', 'description': 'Teammitglied'},
+          ],
+          'turns': [
+            {
+              'character_name': 'Alex',
+              'body': 'Wir müssen weiter.',
+              'stage_direction': '',
+            },
+          ],
+        },
+        id: 'case-1',
+        requireRichStructure: true,
+      ),
+      throwsFormatException,
+    );
+  });
+
   test('failed situation understanding never completes the spiral', () async {
     final controller = RealLifeReplayController(
       permission: _Permission(),

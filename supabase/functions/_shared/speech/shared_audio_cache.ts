@@ -6,7 +6,9 @@ import {
 
 export const sharedSpeechResourceKinds = [
   "scenario_intro",
+  "scenario_stage_direction",
   "scenario_turn",
+  "scenario_response_cue",
   "challenge_prompt",
 ] as const;
 

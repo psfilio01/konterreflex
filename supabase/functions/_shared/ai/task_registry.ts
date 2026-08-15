@@ -4,13 +4,13 @@ import {
   conversationReplyV1,
   goldenBookExtractV1,
   realLifeExtractV1,
-  realLifeReconstructV2,
+  realLifeReconstructV3,
   responseChallengeSessionV1,
   responseEvaluateV2,
   responseEvaluateV3,
-  scenarioGenerateV2,
-  scenarioPersonalizeV1,
-  scenarioSafetyReviewV1,
+  scenarioGenerateV3,
+  scenarioPersonalizeV2,
+  scenarioSafetyReviewV2,
 } from "./generated_prompts.ts";
 
 export interface AiTaskDefinition {
@@ -42,7 +42,7 @@ const characterSchema = strictObject({
 });
 
 const turnSchema = strictObject({
-  character_name: text(),
+  character_name: text(1),
   body: text(1),
   stage_direction: text(),
 });
@@ -51,6 +51,7 @@ const scenarioSchema = strictObject({
   title: text(1),
   category: text(1),
   moderator_intro: text(1),
+  response_cue: text(1),
   trigger_statement: text(1),
   underlying_intent: text(1),
   evaluation_focus: textList(6),
@@ -66,6 +67,7 @@ const scenarioSchema = strictObject({
 const reconstructionSchema = strictObject({
   title: text(1),
   moderator_intro: text(1),
+  response_cue: text(1),
   characters: {
     type: "array",
     items: characterSchema,
@@ -110,20 +112,20 @@ const visualFeedbackSchema = strictObject({
 export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   "scenario.generate": {
     task: "scenario.generate",
-    prompt: scenarioGenerateV2,
-    promptVersion: "scenario_generate_v2",
+    prompt: scenarioGenerateV3,
+    promptVersion: "scenario_generate_v3",
     outputSchema: scenarioSchema,
   },
   "scenario.personalize": {
     task: "scenario.personalize",
-    prompt: scenarioPersonalizeV1,
-    promptVersion: "scenario_personalize_v1",
+    prompt: scenarioPersonalizeV2,
+    promptVersion: "scenario_personalize_v2",
     outputSchema: scenarioSchema,
   },
   "scenario.safety_review": {
     task: "scenario.safety_review",
-    prompt: scenarioSafetyReviewV1,
-    promptVersion: "scenario_safety_review_v1",
+    prompt: scenarioSafetyReviewV2,
+    promptVersion: "scenario_safety_review_v2",
     outputSchema: strictObject({
       decision: { type: "string", enum: ["pass", "needs_review", "block"] },
       findings: textList(6),
@@ -200,8 +202,8 @@ export const taskRegistry: Record<AiTask, AiTaskDefinition> = {
   },
   "real_life.reconstruct": {
     task: "real_life.reconstruct",
-    prompt: realLifeReconstructV2,
-    promptVersion: "real_life_reconstruct_v2",
+    prompt: realLifeReconstructV3,
+    promptVersion: "real_life_reconstruct_v3",
     outputSchema: reconstructionSchema,
   },
   "conversation.reply": {

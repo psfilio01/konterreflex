@@ -23,6 +23,10 @@ Core tables:
 - `shared_speech_audio_cache` (server-only metadata; audio lives in private Storage)
 
 Generated scenarios default to `draft`. Only admins may set them to `active`.
+Each scenario stores a localized `response_cue`. Non-empty
+`scenario_turns.stage_direction` values and the response cue are moderator lines
+in the playback sequence. The external authoring contract is documented in
+`docs/SCENARIO_FORMAT.md`.
 
 `feedback` stores one categorical `overall_signal` and six categorical
 `dimension_signals` alongside the explanatory qualitative text. Allowed values

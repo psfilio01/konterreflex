@@ -19,8 +19,9 @@ then reused.
 Curated or approved scenarios cover one to one, group, work, family, friendship,
 dating and public situations. Opening Training selects an adaptive random scene
 without exposing the catalogue in the normal user flow. A neutral moderator
-voice introduces context, one or more actor voices perform the scene, then the
-user responds.
+voice introduces setting, relationships, relevant lead-up and supported tension.
+The moderator also speaks observable stage directions, one or more actor voices
+perform the scene, and a final moderator cue clearly hands the turn to the user.
 
 ### Speech Challenge
 Short prompts without long scene introductions. The user chooses 1 to 15

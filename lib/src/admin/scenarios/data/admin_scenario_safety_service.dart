@@ -16,7 +16,9 @@ class AdminScenarioSafetyService {
       'scenario': {
         'title': scenario.title,
         'category': scenario.category,
+        'locale': scenario.locale,
         'moderator_intro': scenario.moderatorIntro,
+        'response_cue': scenario.responseCue,
         'trigger_statement': scenario.triggerStatement,
         'underlying_intent': scenario.underlyingIntent,
         'evaluation_focus': scenario.evaluationFocus,

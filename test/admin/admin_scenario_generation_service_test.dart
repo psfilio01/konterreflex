@@ -41,7 +41,9 @@ class _Ai implements AiGateway {
     return AiGatewayResult(data: {
       'title': 'Entwurf $index',
       'category': 'Arbeit',
-      'moderator_intro': 'Eine kurze realistische Situation.',
+      'moderator_intro':
+          'Du sitzt nach einem langen Termin mit einem Teammitglied in einem ruhigen Besprechungsraum. Ihr habt gerade über einen wichtigen Vorschlag gesprochen, als die andere Person deinen Beitrag vor der Gruppe offen infrage stellt.',
+      'response_cue': 'Was antwortest du?',
       'trigger_statement': 'Was ist dein Punkt?',
       'underlying_intent': 'Die Aussage fordert eine klare Position.',
       'evaluation_focus': ['Präzision'],
@@ -52,7 +54,7 @@ class _Ai implements AiGateway {
         {
           'character_name': 'Alex',
           'body': 'Was ist dein Punkt?',
-          'stage_direction': ''
+          'stage_direction': 'Alex schaut dich direkt an und fragt ruhig:'
         }
       ],
     }, provider: 'mock', model: 'mock', promptVersion: 'scenario_generate_v1');

@@ -10,12 +10,16 @@ const prompts = [
   ["realLifeExtractV1", "real_life_extract_v1.md"],
   ["realLifeReconstructV1", "real_life_reconstruct_v1.md"],
   ["realLifeReconstructV2", "real_life_reconstruct_v2.md"],
+  ["realLifeReconstructV3", "real_life_reconstruct_v3.md"],
   ["responseChallengeSessionV1", "response_challenge_session_v1.md"],
   ["responseEvaluateV2", "response_evaluate_v2.md"],
   ["responseEvaluateV3", "response_evaluate_v3.md"],
   ["scenarioGenerateV2", "scenario_generate_v2.md"],
+  ["scenarioGenerateV3", "scenario_generate_v3.md"],
   ["scenarioPersonalizeV1", "scenario_personalize_v1.md"],
+  ["scenarioPersonalizeV2", "scenario_personalize_v2.md"],
   ["scenarioSafetyReviewV1", "scenario_safety_review_v1.md"],
+  ["scenarioSafetyReviewV2", "scenario_safety_review_v2.md"],
 ] as const;
 
 const sections = await Promise.all(prompts.map(async ([name, file]) => {
